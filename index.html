@@ -58,7 +58,7 @@ h1 .line{display:block}
 #next{background:var(--blue);border-color:var(--blue);color:#fff}
 .nav-button:hover:not(:disabled){box-shadow:0 0 0 2px var(--ink)}
 .nav-button:disabled{opacity:.3;cursor:default}
-.route-map{position:relative;height:91px;min-width:0}
+.route-map{position:relative;height:110px;min-width:0}
 .route-map>svg{position:absolute;width:100%;height:100%;inset:0;overflow:visible}
 .route-map path,.route-map rect{vector-effect:non-scaling-stroke}
 .route-map .fused{fill:#eef2ed;stroke:var(--line)}
@@ -67,8 +67,9 @@ h1 .line{display:block}
 .route-map .groupby-route{stroke:var(--green);opacity:.5}
 .route-map[data-branch="join"] .join-route,.route-map[data-branch="groupby"] .groupby-route{opacity:1;stroke-width:2.5}
 .route-heading,.fusion-label{position:absolute;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);pointer-events:none}
-.route-heading{top:0;left:14%}
-.fusion-label{top:76px;left:34%;transform:translateX(-50%);white-space:nowrap}
+.route-heading{top:0;left:13%}
+.route-heading.groupby-heading{top:62px}
+.fusion-label{top:55px;left:29.5%;transform:translateX(-50%);white-space:nowrap}
 .stations{list-style:none;margin:0;padding:0}
 .station{position:absolute;transform:translate(-50%,-7px);text-align:center}
 .station button{position:relative;z-index:1;background:none;border:0;padding:0 3px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:34px}
@@ -105,9 +106,26 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
 .code .comment{color:var(--muted)}
 .code .hot .comment{color:var(--ink)}
 .code .fn{font-weight:700}
+.memory{margin-top:12px;min-height:var(--memory-height,0px);font-size:11px;line-height:1.55}
+.memory h2{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.memory .memory-variables{margin:0 0 8px;color:var(--muted);font-size:10px}
+.memory-variables span{display:block}
+.memory-variables code,.memory dd,.memory-total span{font-family:Consolas,'Liberation Mono',monospace}
+.memory dl{margin:0}
+.memory dl>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+.memory dt{font-weight:400}
+.memory dd{margin:0;overflow-wrap:anywhere}
+.memory p{margin:6px 0 0;color:var(--muted)}
+.memory-total{margin-top:8px;padding-top:7px;border-top:1px solid var(--line)}
+.memory-total strong{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.memory-total span{display:block;overflow-wrap:anywhere}
+.memory-total .memory-formula{display:grid;grid-template-columns:max-content max-content}
+.memory-factor{text-align:right}
+.memory-unit{text-align:left;padding-left:.8ch}
 @media(max-width:1199px){.figure{display:contents}.code-panel{order:1;margin:16px 0 0}}
 @media(min-width:1200px){.figure{grid-template-columns:minmax(0,1fr) 380px}}
 @media(min-width:1200px) and (max-height:900px){.code-label{margin-bottom:4px}.code{padding:6px 12px;font-size:10.5px;line-height:1.4}.code .line{margin:0 -12px;padding:0 12px 0 9px}}
+@media(max-width:360px){h1{font-size:32px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
 </style>
 </head>
@@ -119,15 +137,15 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
     <div class="stop-sign" aria-hidden="true"><div class="stop-number" id="number"></div><div class="stop-label" id="stop-label"></div></div>
   </div>
   <div class="execution" id="execution" role="group" aria-label="Execution stages. Host setup is unboxed. Outlined boxes show GPU stages; device scans may launch several kernels. Arrows mark execution boundaries."></div>
-  <div class="figure"><div class="stage" id="stage"></div><div class="code-panel" id="code-panel"><div class="code-label">Thrust-style pseudocode</div><pre class="code" tabindex="0"><code id="code"></code></pre></div></div>
+  <div class="figure"><div class="stage" id="stage"></div><div class="code-panel" id="code-panel"><div class="code-label">Thrust-style pseudocode</div><pre class="code" tabindex="0" aria-label="Slide pseudocode"><code id="code"></code></pre><section class="memory" id="memory" aria-label="Device buffer sizes"></section></div></div>
   <div class="caption"><div><div class="caption-label" id="caption-label"></div><button type="button" class="source-button" id="source" aria-haspopup="dialog">Green 2021 · abstract</button></div><p id="caption"></p><div class="context" id="context"></div></div>
 </main>
 <nav class="navigation" aria-label="Presentation navigation">
   <button type="button" class="nav-button" id="back" aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12H3m7-7-7 7 7 7"/></svg><span>Back</span></button>
   <div class="route-map" id="route-map">
-    <svg viewBox="0 0 1000 91" preserveAspectRatio="none" fill="none" stroke="var(--line)" stroke-width="1.5" aria-hidden="true"><rect class="fused" x="240" y="25" width="200" height="43"/><path d="M30 40H730"/><path class="join-route" d="M730 40V15H900V40"/><path class="groupby-route" d="M730 40V67H900V40"/><path class="summary-route" d="M900 40H980"/></svg>
-    <span class="route-heading">Shared setup + build</span><span class="fusion-label">One build kernel</span>
-    <ol class="stations" id="stations" aria-label="Host sizing comes first. Hash and count share one kernel, followed by scan and fill. Join and groupby independently consume the same CSR. The last slide summarizes both operations."></ol>
+    <svg viewBox="0 0 1000 110" preserveAspectRatio="none" fill="none" stroke="var(--line)" stroke-width="1.5" aria-hidden="true"><rect class="fused" x="200" y="10" width="190" height="41"/><path d="M30 50H80"/><path class="join-route" d="M80 50V25H880V50"/><path class="groupby-route" d="M80 50V80H880V50"/><path class="summary-route" d="M880 50H960"/></svg>
+    <span class="route-heading">Join</span><span class="route-heading groupby-heading">Groupby</span><span class="fusion-label">One build kernel</span>
+    <ol class="stations" id="stations" aria-label="Two HashCSR implementations. Join: size, hash and count in one kernel, scan, scatter, probe and scan, retrieve. Groupby: build and rank, compact groups, scan offsets, fill rows, then reduce. The last slide summarizes both."></ol>
   </div>
   <button type="button" class="nav-button" id="next" aria-label="Next slide"><span>Next</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18m-7-7 7 7-7 7"/></svg></button>
 </nav>
@@ -138,7 +156,7 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
   <div class="dialog-heading"><h2 id="notes-title">Notes &amp; sources</h2><button type="button" class="close" id="close-notes" aria-label="Close notes">✕</button></div>
   <h3>What this depicts</h3>
   <p>HashCSR combines a hash lookup with a compressed sparse row (CSR) layout: each group owns a contiguous segment of build-row IDs. Join probes find the segment and expand its members.</p>
-  <p>Join and groupby share the same HashCSR construction: build, scan, fill. Only the consumer changes. Join probes the index and expands matches; groupby traverses its occupied segments and reduces payloads. The join diagrams follow the packed, representative-row-indexed design in <a href="https://github.com/NVIDIA/cudf/pull/24231" target="_blank" rel="noopener noreferrer">cuDF PR #24231</a>, revision <code>c118ec760e6d</code>.</p>
+  <p>Join and groupby implement the count → scan → place technique with separate HashCSR builds. Join retains a packed lookup directory with representative-row offsets. Groupby records per-row ranks, compacts occupied groups, and reduces a dense CSR. The join diagrams follow the packed, representative-row-indexed design in <a href="https://github.com/NVIDIA/cudf/pull/24231" target="_blank" rel="noopener noreferrer">cuDF PR #24231</a>, revision <code>c118ec760e6d</code>. Capacity sizing, starting slots, and join allocation lifetimes follow <a href="https://github.com/NVIDIA/cudf/pull/24331" target="_blank" rel="noopener noreferrer">cuDF PR #24331</a>, merged revision <code>6bbcaedd6bdc</code>.</p>
   <h3>Research reference</h3>
   <p>Oded Green. 2021. <cite>HashGraph—Scalable Hash Tables Using a Sparse Graph Data Structure.</cite> <em>ACM Transactions on Parallel Computing</em> 8(2), 1–17. <a href="https://dl.acm.org/doi/10.1145/3460872" target="_blank" rel="noopener noreferrer">doi:10.1145/3460872</a>.</p>
   <p class="source-note">The abstract excerpt below is from the published abstract. Other quotations and section/page locators refer explicitly to the author’s <a href="https://arxiv.org/abs/1907.02900v1" target="_blank" rel="noopener noreferrer">open 2019 preprint, arXiv:1907.02900v1</a>, not to the journal’s pagination. Quotations are embedded here for offline reading.</p>
@@ -153,18 +171,18 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
     <p>Let <code>N</code> be the number of build rows, including duplicates, and let <code>α</code> be the requested load factor (<code>0 &lt; α ≤ 1</code>; default <code>0.5</code>). The host computes:</p>
     <p><code>R = max(N + 1, ceil(N / α))</code></p>
     <ul>
-      <li>If <code>α ≤ 0.5</code>, capacity is <code>R</code>, without power-of-two rounding.</li>
-      <li>If <code>α &gt; 0.5</code>, capacity is <code>bit_ceil(R)</code>: the smallest power of two at least as large as <code>R</code>.</li>
+      <li>Capacity is <code>R</code>.</li>
+      <li>The starting slot is <code>__umulhi(__brev(hash), capacity)</code>: reverse the hash’s bits, multiply by capacity, and keep the high 32 bits of the product, giving a slot in <code>[0, capacity)</code>. Linear probing wraps from the last slot to slot 0.</li>
     </ul>
-    <p>For this example, <code>N = 6</code> and <code>α = 0.5</code>, so <code>R = max(7, 12) = 12</code> and capacity is <strong>12 slots</strong>. At <code>α = 0.75</code>, <code>R = 8</code> and capacity is 8; at <code>α = 1</code>, <code>R = 7</code> rounds up to 8.</p>
+    <p>For this example, <code>N = 6</code> and <code>α = 0.5</code>, so <code>R = max(7, 12) = 12</code> and capacity is <strong>12 slots</strong>. At <code>α = 0.75</code>, capacity is 8; at <code>α = 1</code>, capacity is 7.</p>
     <p>The <code>N + 1</code> term leaves at least one empty slot even if every row is unique. Distinct-key count is not needed before construction: budgeting from all six rows is conservative. Our three distinct keys ultimately occupy only <code>3 / 12 = 25%</code> of the directory.</p>
-    <p>Capacity determines the hash modulus and slot allocation, <strong>not the row-bit width</strong>. The packed slot still needs only <code>bit_width(6) = 3</code> row bits, even though there are 12 hash slots. Capacity sizing uses host metadata, not a GPU kernel or a distinct-count pass.</p>
-    <p class="source-note">Source: <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_join.cu#L60-L77" target="_blank" rel="noopener noreferrer"><code>hash_csr_capacity</code> in PR #24231</a>. This is the cuDF variant’s sizing policy, not HashGraph’s load-factor policy. This revision also checks that both the requested size and its power-of-two round-up fit in <code>uint32_t</code>; otherwise it throws.</p>
+    <p>Capacity determines the range of starting slots and the slot allocation, <strong>not the row-bit width</strong>. The packed slot still needs only <code>bit_width(6) = 3</code> row bits, even though there are 12 hash slots. Capacity sizing uses host metadata, not a GPU kernel or a distinct-count pass.</p>
+    <p class="source-note">Source: <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_join.cu#L59-L70" target="_blank" rel="noopener noreferrer"><code>hash_csr_capacity</code></a> and <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_csr.cuh#L32-L38" target="_blank" rel="noopener noreferrer"><code>initial_slot</code></a> as of <a href="https://github.com/NVIDIA/cudf/pull/24331" target="_blank" rel="noopener noreferrer">cuDF PR #24331</a>. This is the cuDF variant’s sizing policy, not HashGraph’s load-factor policy. The requested size must fit in <code>uint32_t</code>; otherwise it throws.</p>
   </section>
   <section class="paper-card" id="paper-adaptation" tabindex="-1" aria-labelledby="paper-adaptation-title">
     <h4 id="paper-adaptation-title">HashGraph and this HashCSR variant</h4>
     <p>HashGraph groups inputs by <strong>hash bucket</strong>, including unequal keys that collide. This presentation’s HashCSR variant uses an <strong>open-addressed directory of equal-key groups</strong>. Equality checks separate A and B even when their starting slots collide.</p>
-    <p>The shared principle is count → scan → place into contiguous ranges. The paper’s Algorithm 1 has separate parallel loops for hashing and counting; the fused build kernel shown here, packed 32-bit slots, representative-row offsets, and decrementing fill cursors are implementation details of the cuDF variant, not claims about the paper’s kernel boundaries.</p>
+    <p>The shared principle is count → scan → place into contiguous ranges. The paper’s Algorithm 1 has separate parallel loops for hashing and counting. The join implementation fuses insertion and counting, packs 32-bit slots, indexes offsets by representative row, and reuses cumulative ends as decrementing fill cursors. The groupby implementation saves ranks during insertion and compacts groups before filling a dense CSR.</p>
     <p class="source-note">Compare Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=3" target="_blank" rel="noopener noreferrer">preprint §§3.1–3.2, Algorithm 1, pp. 3–4</a>, with <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_csr_kernels.cuh" target="_blank" rel="noopener noreferrer">the cuDF kernels</a>.</p>
   </section>
   <section class="paper-card" id="paper-count" tabindex="-1" aria-labelledby="paper-count-title">
@@ -191,17 +209,37 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
     <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=5" target="_blank" rel="noopener noreferrer">preprint §3.4, pp. 5–6</a>.</p>
     <p>This describes the build/probe relationship in the join scene. The paper also introduces a different two-HashGraph, list-intersection probe (Algorithm 3); that is not the one-index probe/count → scan → retrieve path illustrated here.</p>
   </section>
+  <section class="paper-card" id="retrieve-source" tabindex="-1" aria-labelledby="retrieve-source-title">
+    <h4 id="retrieve-source-title">Retrieval iterates over output slots</h4>
+    <p>For output slot <code>k</code>, an upper bound over the probe-output offsets finds the probe row <code>p</code>. The local match index is <code>k − out_offsets[p]</code>; adding it to the build group’s start selects the matching build row ID. Repeated offsets skip probes with zero matches.</p>
+    <p>A warp first looks up its output chunk’s endpoints. If both belong to one probe row, lanes reuse that row; otherwise they search within the endpoint probe range. The slide uses three-output chunks to expose both cases. Actual chunk sizes depend on output size and launch configuration, with lanes processing multiple outputs.</p>
+    <p class="source-note">Sources: <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_csr_kernels.cu#L18-L105" target="_blank" rel="noopener noreferrer"><code>hash_csr_retrieve_kernel</code></a>; <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_join_retrieve.cu#L71-L173" target="_blank" rel="noopener noreferrer">probe, scan, and retrieval allocation lifetimes</a>.</p>
+  </section>
+  <section class="paper-card" id="groupby-build-source" tabindex="-1" aria-labelledby="groupby-build-source-title">
+    <h4 id="groupby-build-source-title">Groupby builds dense groups</h4>
+    <p>Groupby stores a representative row index in each 32-bit directory slot. Its build kernel records a count index and within-group rank for each row. For this six-row example, capacity is 12 and counts use representative row indices. Positive counts select <code>key_rows = [0,1,3]</code>, whose counts <code>[3,2,1]</code> scan into dense offsets <code>[0,3,5,6]</code>. The counts buffer is then reused for group starts. Fill uses each saved index and rank to place row IDs.</p>
+    <p>The illustrated ranks give <code>grouped_rows = [0,2,5,1,4,3]</code>. Representative winners and within-group order depend on GPU scheduling. The groupby starts from the input rows and owns these buffers independently of the join.</p>
+    <p>At <code>n ≥ 2²¹</code>, groupby estimates distinct keys from a sample and may use a smaller table. When capacity is at most <code>n</code>, counts use directory slot indices; bounded probing can trigger a retry at full capacity. The all-singleton path directly produces identity row order. These paths have their own allocation lifetimes.</p>
+    <p class="source-note">Sources at <code>d367924abaa9</code>: <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/compute_groupby.cu#L199-L382" target="_blank" rel="noopener noreferrer"><code>group_keys</code></a> and <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/hash_csr_kernels.cuh#L104-L223" target="_blank" rel="noopener noreferrer">build and fill kernels</a>.</p>
+  </section>
   <section class="paper-card" id="paper-groupby" tabindex="-1" aria-labelledby="paper-groupby-title">
-    <h4 id="paper-groupby-title">A shared structure, multiple consumers</h4>
+    <h4 id="paper-groupby-title">Reduce each dense CSR segment</h4>
     <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=1">“group-by and aggregation”</blockquote>
     <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=1" target="_blank" rel="noopener noreferrer">preprint §1, p. 1</a>, among the applications of hash tables, alongside inner join.</p>
-    <p>Groupby reduces the payloads in each CSR segment using an aggregation operator. This example uses SUM. The results and fused load/reduce illustration are this presentation’s worked example, not a quoted groupby kernel from the paper.</p>
+    <p>Groupby reduces payloads through grouped row IDs. Groups of at most 32 rows use <code>reduce_small_groups_kernel</code>, with one thread per group. Larger groups use warp reductions; groups over 1024 rows use chunk partials followed by a second reduction. The three example groups take the small-group path and produce int64 sums from int32 payloads. Gathering keys from representative rows completes the three-row output.</p>
+    <p class="source-note">Sources: <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/grouped_reductions.cuh#L60-L86" target="_blank" rel="noopener noreferrer">small-group reduction</a>, <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/compute_single_pass_aggs.cu#L102-L187" target="_blank" rel="noopener noreferrer">segment scheduling</a>, and <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/single_pass_reductions.cuh#L172-L225" target="_blank" rel="noopener noreferrer">indirect loads and SUM output</a>.</p>
+  </section>
+  <section class="paper-card" id="groupby-dispatch-source" tabindex="-1" aria-labelledby="groupby-dispatch-source-title">
+    <h4 id="groupby-dispatch-source-title">Groupby dispatches by segment length</h4>
+    <p>The additional slide uses a different, illustrative workload: three groups of 3, 64, and 2050 rows. The 3-row group takes the one-thread path. The 64-row group gets one warp. The 2050-row group is divided into three chunks of 1024, 1024, and 2 rows; one 256-thread block reduces each chunk into an int64 partial, and another block reduces the three partials to the final SUM. The thresholds are at 32 and 1024 rows, not average group size. These paths operate on the groupby CSR already built; they do not rebuild it.</p>
+    <p>For this one-column, non-null int32 SUM, let <code>H</code> be the number of groups wider than 32, <code>L</code> the number wider than 1024, and <code>Q</code> the total chunks of long groups. Here <code>n=2117, G=3, H=2, L=1, Q=3</code>. At the chunk-reduction stage, scheduling retains <code>warp_groups[H]</code>, <code>group_chunks[L+1]</code>, <code>chunk_ranges[Q]</code> (two int32 endpoints per range), and <code>chunk_order[Q]</code>; the reducer allocates <code>partials[Q]</code> of int64. <code>first_rows[Q]</code> and the sort workspace exist during chunk scheduling, but are released before the partials are allocated; the panel does not sum these different moments. The returned sums are excluded.</p>
+    <p class="source-note">Sources at <code>d367924abaa9</code>: <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/compute_single_pass_aggs.cu#L102-L187" target="_blank" rel="noopener noreferrer">group selection and chunk scheduling</a>; <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/grouped_reductions.cuh#L57-L290" target="_blank" rel="noopener noreferrer">one-thread, warp, and two-pass block reductions</a>.</p>
   </section>
   <section class="paper-card" id="paper-layout" tabindex="-1" aria-labelledby="paper-layout-title">
     <h4 id="paper-layout-title">Two offsets define a range</h4>
     <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=3">“The end of the adjacency array is the offset to the next vertex.”</blockquote>
     <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=3" target="_blank" rel="noopener noreferrer">preprint §3.1, p. 3; Figure 1, p. 4</a>.</p>
-    <p>For representative row <code>r</code>, this becomes <code>values[offsets[r]:offsets[r+1]]</code>. Join enumerates that interval; groupby reduces its payloads. Equal adjacent offsets describe an empty segment.</p>
+    <p>Join locates a representative row <code>r</code> and enumerates <code>values[offsets[r]:offsets[r+1]]</code>; equal adjacent offsets describe an empty segment. Groupby assigns dense group IDs <code>g</code> and reduces payloads through <code>grouped_rows[group_offsets[g]:group_offsets[g+1]]</code>.</p>
   </section>
   <h3>Animation steps ≠ kernel launches</h3>
   <ul>
@@ -210,19 +248,30 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
     <li><strong>Device scan:</strong> <code>cub::DeviceScan::InclusiveSum</code> runs after build and before fill. A library scan is a separate GPU stage and may launch multiple kernels.</li>
     <li><strong>Fill kernel:</strong> numeric keys hash/find their representative again, decrement a cursor, and scatter row IDs in <code>hash_csr_build_fill_kernel</code>. The cached variant reads the representative instead. Cursor updates produce the final offsets in the same kernel.</li>
     <li><strong>Join:</strong> <code>hash_csr_probe_count_kernel</code> fuses probe hashing, lookup, and match counting. A separate device scan computes output offsets; <code>hash_csr_retrieve_kernel</code> then expands ranges into pairs.</li>
-    <li><strong>Groupby:</strong> a reduction kernel indirectly loads payloads through the CSR row IDs and aggregates each segment. The example uses SUM. “Gather” here is an in-kernel load, not a separate gather kernel or temporary value array. It consumes the shared CSR, not the join output.</li>
+    <li><strong>Groupby build:</strong> <code>hash_csr_build_kernel</code> fuses insertion, counting, and rank assignment. Device algorithms compact group IDs, copy representatives, scan counts, and scatter group starts. <code>hash_csr_fill_kernel</code> then places rows using saved positions.</li>
+    <li><strong>Groupby reduction:</strong> scheduling inspects segment sizes first. The six-row example uses one small-group reduction kernel with indirect payload loads, followed by a device gather of output keys. The alternate workload shows direct warp reductions for medium groups and two block-reduction passes for long groups.</li>
   </ul>
-  <p class="source-note">The code panel is illustrative Thrust-style pseudocode, not cuDF source. Each <code>for_each_n</code> stands for one custom kernel above; <code>table.insert</code>, <code>table.find</code>, and <code>counting</code> are shorthand. cuDF aggregates atomics per warp; the pseudocode uses one atomic per row.</p>
-  <p class="source-note">The execution strip shows the main data path. Initialization, allocation, and size-transfer plumbing are omitted. Boundaries are stream-ordered dependencies, not necessarily host synchronizations. Join and groupby are separate consumers of the CSR, not consecutive GPU stages.</p>
+  <p class="source-note">The code panel is illustrative Thrust-style pseudocode, not cuDF source. Each outer <code>for_each_n</code> stands for one custom kernel above; <code>seq</code> keeps the nested reduction inside its calling thread. Table methods include hashing and full key equality checks. <code>counting</code> denotes a counting iterator or range; <code>a[indices]</code> denotes an indirect view and <code>a[begin:end]</code> a half-open range. Compaction produces <code>G</code> selected groups. Join <code>group</code> means <code>probe_groups</code>; groupby <code>counts</code>, <code>offsets</code>, and <code>ids</code> mean <code>slot_counts</code>, <code>group_offsets</code>, and <code>grouped_rows</code>. Counts, terminal zeros, and the first group offset are initialized to zero. cuDF aggregates atomics per warp; the pseudocode uses one atomic per row.</p>
+  <p class="source-note">The execution strip shows the main data path. Initialization, allocation, and size-transfer plumbing are omitted. Boundaries are stream-ordered dependencies, not necessarily host synchronizations. Join and groupby are independent operations, each with its own build and buffers.</p>
+  <h3>Device memory accounting</h3>
+  <p>The panels define their variables above the allocations: <code>n</code> is the number of build rows (6 except on the alternate dispatch slide), <code>m</code> the number of probe rows (3), <code>J</code> the number of join outputs (5), <code>G</code> the number of groups (3), and <code>cap</code> the number of directory slots (12). Keys A–D and payloads are non-null int32 values. A groupby <code>position</code> contains a uint32 count index and an int32 rank. The bottom row sums the listed allocations live at that stage that are <strong>not returned to the caller</strong>, including the join directory. Final output columns are listed separately.</p>
+  <p>Sizes are requested allocation capacities. The <code>W</code> terms denote library workspace sizes obtained for the actual device, library version, and operation. The figures cover the listed buffers; input storage, table preprocessing and column descriptors, allocator rounding or reserved pool memory, and host storage are outside this accounting. Lifetimes, rather than a sum of all allocations ever made, determine live memory.</p>
+  <ul>
+    <li><strong>Join:</strong> counts, ends, and starts share the <code>(n+1) × sizeof(int32)</code> offsets allocation. The build scan releases its workspace before allocating row IDs. Slots, offsets, and row IDs form the join index; it is temporary to the join operation despite living across several slides. Keys containing strings or lists additionally cache <code>n × sizeof(int32)</code> representatives during construction.</li>
+    <li><strong>Probe and retrieve:</strong> match counts, an auxiliary uint64 counter, and scan workspace are released before output allocation. Group IDs and int64 output offsets remain through retrieval. The two final pair columns occupy <code>2J × sizeof(int32)</code>, outside the temporary-storage total.</li>
+    <li><strong>Groupby build:</strong> the directory is released after build on this representative-counting path. <code>group_slots</code> selects <code>G</code> indices but retains capacity for <code>n</code> until released before fill. Its selection workspace is released after <code>copy_if</code>, before <code>key_rows</code> is copied. The scan workspace is released after scanning counts; then scatter reuses counts as group starts. Fill allocates grouped row IDs after releasing <code>group_slots</code>.</li>
+    <li><strong>Groupby reduction:</strong> segment scheduling uses library workspace before the reduction. The small-group path writes sums directly to the <code>G × sizeof(int64)</code> output. Key gathering produces <code>G × sizeof(int32)</code> keys; grouping arrays live through the gather. The dispatch slide counts the extra scheduling arrays and chunk partials at the chunk-reduction stage. Nullable inputs add validity storage.</li>
+  </ul>
+  <p class="source-note">Allocation sources: <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_join_impl.cuh#L23-L52" target="_blank" rel="noopener noreferrer">join index</a>, <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_join.cu#L104-L172" target="_blank" rel="noopener noreferrer">join build lifetimes</a>, <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_join_retrieve.cu#L71-L173" target="_blank" rel="noopener noreferrer">probe/retrieve lifetimes</a>, and <a href="https://github.com/PointKernel/cudf/blob/d367924abaa9daac576e666c72fede23e9de92ae/cpp/src/groupby/hash/compute_groupby.cu#L392-L480" target="_blank" rel="noopener noreferrer">groupby temporary resources and output keys</a>.</p>
   <h3>Example &amp; conventions</h3>
   <p>Build rows <code>r0…r5</code>: <code>(A,12), (B,7), (A,8), (C,5), (B,3), (A,10)</code>. Probe rows <code>p0…p2</code>: <code>B, A, D</code>. All keys and values are non-null.</p>
   <ul>
-    <li>Fixed illustrative 32-bit hashes <code>A→0xECC1EF1D, B→0x62F50105, C→0x0BEF92C6</code> show mixed bits across the whole word. They are chosen so that modulo 12 gives <code>1, 1, 6</code>, preserving the A/B probe collision. These are not cuDF’s real hash outputs. Each displayed fingerprint shows its first and last three bits; the ellipsis hides the 23 middle bits, which may contain both zeros and ones.</li>
-    <li>One possible execution chooses representatives <code>r0, r1, r3</code>. Threads race using a device-scoped <strong>atomic compare-and-swap (CAS)</strong> on 32-bit slots in global memory. The first row to claim an empty slot becomes that key’s representative; equal rows reuse its stored row index. A collision with a different key continues probing. The winner is scheduling-dependent, <strong>not necessarily the lowest row index</strong>. This is distinct from the warp-aggregated atomic add that counts group members. See <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_csr.cuh#L43-L63" target="_blank" rel="noopener noreferrer"><code>hash_table_ref::insert</code></a>.</li>
+    <li>Fixed illustrative 32-bit hashes <code>A→0xECC1EF1D, B→0x62F5012D, C→0x0BEF92C6</code> show mixed bits across the whole word. They are chosen so that <code>__umulhi(__brev(hash), 12)</code> gives starting slots <code>8, 8, 4</code>, preserving the A/B probe collision. These are not cuDF’s real hash outputs. Each displayed fingerprint shows its first and last three bits; the ellipsis hides the 23 middle bits, which may contain both zeros and ones.</li>
+    <li>One possible execution chooses representatives <code>r0, r1, r3</code>. Threads race using a device-scoped <strong>atomic compare-and-swap (CAS)</strong> on 32-bit slots in global memory. The first row to claim an empty slot becomes that key’s representative; equal rows reuse its stored row index. A collision with a different key continues probing. The winner is scheduling-dependent, <strong>not necessarily the lowest row index</strong>. This is distinct from the warp-aggregated atomic add that counts group members. See <a href="https://github.com/NVIDIA/cudf/blob/6bbcaedd6bdca0fcf9f065a5a2cc4005c2dd0ab2/cpp/src/join/hash_join/hash_csr.cuh#L49-L67" target="_blank" rel="noopener noreferrer"><code>hash_table_ref::insert</code></a>.</li>
     <li>The packed slot combines <strong>two independently sourced fields</strong>. Its 29 high bits retain part of the original hash as a <strong>fingerprint</strong>: a quick mismatch filter that avoids loading and comparing unrelated keys. Its three low bits identify the <strong>representative build row</strong>, which locates both the original key and the group’s CSR segment. A fingerprint match still requires a full key comparison; it is not proof of equality. The row bits are neither hash bits nor a hash-table slot number.</li>
     <li>For C, <code>hash = 0x0BEF92C6</code> and the representative is <code>r3</code>. Retain the 29-bit fingerprint <code>00001011111011111001001011000</code>, discard the hash’s low bits <code>110</code>, and replace them with row index <code>011</code>. Thus <code>(0x0BEF92C6 &amp; ~7) | 3 = 0x0BEF92C3</code>. The full hash still determines the starting slot; only its stored representation is packed.</li>
     <li>Any similar-looking patterns in the fingerprint and row bits are <strong>coincidental, not duplicated information</strong>. The low field comes from the representative row index, never from copying fingerprint bits. For example, B’s original low hash bits <code>101</code> are replaced by row index <code>001</code>.</li>
-    <li>The six-row diagram shows the <strong>resolved stored word</strong> for each input, not six separately stored entries. Duplicates reuse the winning representative: <code>r2</code> and <code>r5</code> use <code>r0</code>’s bits <code>000</code>; <code>r4</code> uses <code>r1</code>’s bits <code>001</code>. A resolves to <code>0xECC1EF18</code>, B to <code>0x62F50101</code>, and C to <code>0x0BEF92C3</code>: only three directory entries.</li>
+    <li>The six-row diagram shows the <strong>resolved stored word</strong> for each input, not six separately stored entries. Duplicates reuse the winning representative: <code>r2</code> and <code>r5</code> use <code>r0</code>’s bits <code>000</code>; <code>r4</code> uses <code>r1</code>’s bits <code>001</code>. A resolves to <code>0xECC1EF18</code>, B to <code>0x62F50129</code>, and C to <code>0x0BEF92C3</code>: only three directory entries.</li>
     <li>Six build rows (indices 0–5) need three row bits. In general, <code>bit_width(N)</code> row bits leave <code>32 − bit_width(N)</code> fingerprint bits. This keeps the all-ones row index outside <code>[0, N)</code>, so the all-ones 32-bit slot can represent empty. The key itself stays in the original row, not in the packed slot.</li>
     <li>Counts include a trailing zero. An inclusive scan creates cumulative ends; atomic decrement-and-scatter transforms these into exclusive starts. Nonrepresentative rows retain zero-length segments.</li>
     <li>Numeric keys find their representative again during fill. Keys containing strings or lists cache the representative to avoid repeating costly hashing and comparisons.</li>
@@ -230,7 +279,7 @@ dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
   </ul>
   <h3>Controls</h3>
   <p>Use the Back / Next buttons, the arrow keys, or select a timeline step. Clicking the slide itself does not navigate. Home / End display the first / last slide. Escape closes these notes. No autoplay; reduced-motion preferences are respected.</p>
-  <p class="source-note">Implementation sources (distinct from the HashGraph reference above): <code>hash_csr.cuh</code>, <code>hash_csr_kernels.cuh</code>, <code>hash_join.cu</code>, and <code>retrieve_impl.cuh</code> in PR #24231. All artwork, styles, and scripts are embedded. No network access is needed.</p>
+  <p class="source-note">Implementation sources (distinct from the HashGraph reference above): <code>hash_csr.cuh</code> and <code>hash_csr_kernels.cuh</code> in PR #24231; <code>hash_join.cu</code>, <code>hash_join_retrieve.cu</code>, and <code>hash_csr_kernels.cu</code> as of PR #24331; and <code>compute_groupby.cu</code> and <code>grouped_reductions.cuh</code> for groupby. All artwork, styles, and scripts are embedded. No network access is needed.</p>
 </dialog>
 <script>
 'use strict';
@@ -239,7 +288,7 @@ const P={A:'#e8f3ec',B:'#eaf0fd',C:'#fff0e5',D:'#fff0e5'};
 const rows=[{key:'A',value:12},{key:'B',value:7},{key:'A',value:8},{key:'C',value:5},{key:'B',value:3},{key:'A',value:10}];
 const loadFactor=0.5;
 const requestedCapacity=Math.max(rows.length+1,Math.ceil(rows.length/loadFactor));
-const capacity=loadFactor<=0.5?requestedCapacity:2**Math.ceil(Math.log2(requestedCapacity));
+const capacity=requestedCapacity;
 const representatives=[0,1,0,3,1,0];
 const counts=Array(rows.length+1).fill(0);
 representatives.forEach(rep=>counts[rep]++);
@@ -256,7 +305,14 @@ const outputPairs=Array.from({length:probeOffsets.at(-1)},(_,o)=>retrieve(o));
 console.assert(JSON.stringify(outputPairs)===JSON.stringify(joinPairs),'output-space retrieve must reproduce joinPairs');
 const outputsPerWarp=3;
 const warps=Array.from({length:Math.ceil(outputPairs.length/outputsPerWarp)},(_,w)=>{const begin=w*outputsPerWarp,end=Math.min(begin+outputsPerWarp,outputPairs.length);return {begin,end,first:retrieve(begin)[0],last:retrieve(end-1)[0]};});
-const sums=Object.fromEntries(groups.map(g=>[g.key,g.ids.reduce((sum,r)=>sum+rows[r].value,0)]));
+const groupPositions=representatives.map((rep,i)=>[rep,representatives.slice(0,i).filter(r=>r===rep).length]);
+const groupCounts=rows.map((_,rep)=>groupPositions.filter(([r])=>r===rep).length);
+const groupSlots=groupCounts.flatMap((count,r)=>count>0?[r]:[]);
+const groupOffsets=groupSlots.reduce((acc,r)=>[...acc,acc.at(-1)+groupCounts[r]],[0]);
+const groupedRows=Array(rows.length);
+groupPositions.forEach(([rep,rank],i)=>groupedRows[groupOffsets[groupSlots.indexOf(rep)]+rank]=i);
+const denseGroups=groupSlots.map((rep,g)=>({key:rows[rep].key,rep,ids:groupedRows.slice(groupOffsets[g],groupOffsets[g+1])}));
+const sums=Object.fromEntries(denseGroups.map(g=>[g.key,g.ids.reduce((sum,r)=>sum+rows[r].value,0)]));
 const $=id=>document.getElementById(id);
 const text=(x,y,value,cls='body',color='',anchor='start')=>`<text x="${x}" y="${y}" class="${cls}"${color?` style="fill:${color}"`:''} text-anchor="${anchor}">${value}</text>`;
 const rect=(x,y,w,h,fill='#fff',stroke=C.line,rx=0)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}"/>`;
@@ -266,7 +322,7 @@ const icon=(name,x,y,size=28,color=C.ink)=>{
  const paths={rows:'M4 5h16v4H4zM4 15h16v4H4z',hash:'M9 3 7 21M17 3l-2 18M3 9h18M2 15h18',join:'M3 5h7v7h11M3 19h7v-7m6-5 5 5-5 5',reduce:'M3 4h5l5 8h8M3 20h5l5-8m3-5 5 5-5 5',count:'M5 4v16M11 4v16M17 4v16M2 16l20-8',scan:'M3 18h5v-5h5V8h5V3m-1 0h5v5',scatter:'M3 12h7m0 0V4h11m-11 8h11m-11 0v8h11',route:'M4 20V5h15m-5-5 5 5-5 5'};
  return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="${paths[name]||paths.rows}"/></svg>`;
 };
-function chip(r,x,y,w=100){const row=rows[r];return node(`r${r}`,x,y,rect(0,0,w,42,P[row.key],'none')+rect(0,0,3,42,C[row.key],'none')+text(13,25,`r${r}`,'secondary')+text(44,27,row.key,'key',C[row.key])+text(w-11,26,row.value,'body',C.ink,'end'));}
+function chip(r,x,y,w=100,id=`r${r}`){const row=rows[r];return node(id,x,y,rect(0,0,w,42,P[row.key],'none')+rect(0,0,3,42,C[row.key],'none')+text(13,25,`r${r}`,'secondary')+text(44,27,row.key,'key',C[row.key])+text(w-11,26,row.value,'body',C.ink,'end'));}
 function groupTag(key,x,y){return rect(x,y,28,28,C[key],'none')+text(x+14,y+20,key,'body','#fff','middle');}
 function vector(data,x,y,step=104,type='count',highlight=false){return data.map((v,i)=>{
  const active=[0,1,3].includes(i),key=i===0?'A':i===1?'B':'C',color=highlight?C.orange:active?C[key]:C.muted;
@@ -275,10 +331,12 @@ function vector(data,x,y,step=104,type='count',highlight=false){return data.map(
 function bracket(x,y,w,label,color){return `<path d="M${x} ${y+8}V${y}H${x+w}V${y+8}" fill="none" stroke="${color}" stroke-width="2"/>`+text(x+w/2,y-12,label,'label',color,'middle');}
 function diagram(content,title,description){return `<svg viewBox="0 0 1120 376" role="img" aria-labelledby="diagram-title diagram-description"><title id="diagram-title">${title}</title><desc id="diagram-description">${description}</desc><defs>${Object.entries(C).map(([key,color])=>`<marker id="arrow-${key}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="m2 1 5 4-5 4" fill="none" stroke="${color}" stroke-width="1.5"/></marker>`).join('')}</defs><g class="scene-static">${content}</g><g class="scene-moving"></g></svg>`;}
 function overview(){
- let s=text(25,37,'01 / INPUT','label')+text(432,37,'02 / SHARED INDEX','label')+text(825,37,'03 / OPERATIONS','label');
- s+=arrow('M278 180H399',C.ink)+arrow('M645 180H727V105H793',C.blue)+arrow('M727 180V280H793',C.green);
+ let s=text(25,37,'01 / INPUT','label')+text(432,37,'02 / TWO HASHCSR BUILDS','label')+text(825,37,'03 / OPERATIONS','label');
+ s+=arrow('M278 180H355V110H399',C.blue)+arrow('M355 180V276H399',C.green);
+ s+=arrow('M650 110H793',C.blue)+arrow('M650 276H793',C.green);
  [0,1,2,3,4,5].forEach((r,i)=>{s+=chip(r,25+(i%2)*116,78+Math.floor(i/2)*69,100)});
- s+=node('hub',414,101,icon('hash',20,27,40)+text(80,58,'HashCSR','display')+text(22,111,'KEY → RANGE OF ROW IDS','secondary'));
+ s+=node('join-index',414,76,icon('hash',0,0,34,C.blue)+text(47,24,'JOIN INDEX','label',C.blue)+text(0,73,'Packed directory','body')+text(0,96,'Representative-row CSR','secondary'));
+ s+=node('groupby-index',414,214,icon('hash',0,0,34,C.green)+text(47,24,'GROUPBY INDEX','label',C.green)+text(0,73,'Dense groups','body')+text(0,96,'Saved rank per row','secondary'));
  s+=node('join-sign',817,72,icon('join',0,0,34,C.blue)+text(51,23,'JOIN','label',C.blue)+text(0,74,'Emit row pairs.','number'));
  s+=node('reduce-sign',817,246,icon('reduce',0,0,34,C.green)+text(51,23,'GROUPBY','label',C.green)+text(0,74,'Aggregate values.','number'));
  s+=text(25,339,'6 ROWS · 3 DISTINCT KEYS','secondary')+text(436,339,'CSR = COMPRESSED SPARSE ROW','secondary');
@@ -289,19 +347,19 @@ function sizing(){
  s+=node('size-input',35,65,text(0,53,rows.length,'big-number')+text(0,88,'INCLUDES DUPLICATES','secondary'));
  s+=arrow('M263 101H357')+arrow('M677 101H784');
  s+=node('size-load',405,65,text(0,53,loadFactor,'big-number')+text(0,88,'BUDGET FOR 50% LOAD IF ALL KEYS ARE UNIQUE','secondary'));
- s+=node('size-result',830,65,text(0,53,capacity,'big-number',C.blue)+text(0,88,'NO POWER-OF-TWO ROUNDING HERE','secondary'));
+ s+=node('size-result',830,65,text(0,53,capacity,'big-number',C.blue)+text(0,88,'ONE 32-BIT WORD PER SLOT','secondary'));
  s+=text(35,201,'R = max(N + 1, ceil(N / α))','number')+text(580,201,`max(7, ceil(6 / 0.5)) = ${requestedCapacity}`,'number',C.blue);
- s+=text(35,229,'N + 1 guarantees room for an empty slot.','fine')+text(580,229,'At α ≤ 0.5, keep R. For α > 0.5, round R up to a power of two.','fine');
+ s+=text(35,229,'N + 1 guarantees room for an empty slot.','fine')+text(580,229,'Capacity = R.','fine');
  for(let i=0;i<capacity;i++){
   const x=35+i*88;
   s+=text(x+39,266,i,'secondary','','middle')+node(`bucket${i}`,x,281,rect(0,0,78,42,'#eff2ee','none')+text(39,27,'—','body',C.muted,'middle'));
  }
- s+=text(35,357,'EMPTY DIRECTORY / BEFORE THE BUILD KERNEL','secondary')+text(830,357,`NEXT: hash % ${capacity}`,'secondary',C.blue);
+ s+=text(35,357,'EMPTY DIRECTORY / BEFORE THE BUILD KERNEL','secondary')+text(830,357,`NEXT: umulhi(brev(hash), ${capacity})`,'secondary',C.blue);
  return s;
 }
 function hashing(){
- const hashes={A:0xECC1EF1D,B:0x62F50105,C:0x0BEF92C6};
- const slots={A:1,B:2,C:6};
+ const hashes={A:0xECC1EF1D,B:0x62F5012D,C:0x0BEF92C6};
+ const slots={A:8,B:9,C:4};
  const word=(kind,x,hash,low,color,pale)=>{
   const bits=(hash>>>3).toString(2).padStart(29,'0');
   return `<g data-word="${kind}" transform="translate(${x} 0)">`+
@@ -325,7 +383,7 @@ function hashing(){
    text(811,27,slots[row.key],'body','','middle'));
  });
  s+=text(20,356,'6 ROWS → 3 DIRECTORY ENTRIES; DUPLICATES REUSE A SLOT','label')+
-  text(660,356,`START = hash % ${capacity} · B PROBES 1 → 2`,'secondary');
+  text(660,356,`START = umulhi(brev(hash), ${capacity}) · B PROBES 8 → 9`,'secondary');
  return s;
 }
 function counting(){
@@ -357,46 +415,105 @@ function scattering(){
  s+=text(220,333,'A = values[0:3]','body',C.A)+text(511,333,'B = values[3:5]','body',C.B)+text(805,333,'C = values[5:6]','body',C.C);
  return s;
 }
-function joining(){
- const slotY=o=>48+o*54,tickY=o=>slotY(o)-5.5,trace=3,[traceProbe,traceRow]=outputPairs[trace],traceGroup=groups.find(g=>g.key===probes[traceProbe]);
- let s=text(20,22,'PROBE / LEFT','label')+text(250,22,'CSR RANGES / RIGHT','label')+text(610,22,'OFFSETS','label','','middle')+text(660,22,'OUTPUT SLOTS / ONE LANE EACH','label')+text(905,22,'WARP CHUNKS','label');
+function probing(){
+ let s=text(20,22,'PROBE ROW','label')+text(300,22,'MATCHING BUILD ROWS','label')+text(935,22,'MATCH COUNT','label');
  probes.forEach((key,p)=>{
-  const y=[56,170,284][p];
-  s+=node(`p${p}`,20,y,rect(0,0,145,47,P[key],'none')+text(16,29,`p${p}`,'secondary')+text(62,31,key,'key',C[key])+text(119,29,`×${probeCounts[p]}`,'fine',C[key]));
+  const y=52+p*73,group=groups.find(g=>g.key===key);
+  s+=node(`p${p}`,20,y,rect(0,0,145,42,P[key],'none')+text(16,27,`p${p}`,'secondary')+text(70,29,key,'key',C[key]));
+  s+=arrow(`M185 ${y+21}H280`,C[key]);
+  if(group)group.ids.forEach((r,i)=>s+=chip(r,300+i*112,y));
+  else s+=text(300,y+27,'EMPTY RANGE','label',C.orange);
+  s+=text(710,y+27,group?`rep = r${group.rep}`:'rep = EMPTY','body',C[key]);
+  s+=node(`matches${p}`,968,y,rect(0,0,72,42,P[key],'none')+text(36,29,probeCounts[p],'number',C[key],'middle'));
  });
- s+=arrow('M180 80H238',C.B)+arrow('M180 194H238',C.A);
- [4,1].forEach((r,i)=>s+=chip(r,250+i*112,58));
- [5,2,0].forEach((r,i)=>s+=chip(r,250+i*112,174));
- s+=text(250,50,'values[3:5]','secondary',C.B)+text(250,166,'values[0:3]','secondary',C.A);
- s+=rect(248+values.slice(offsets[traceGroup.rep]).indexOf(traceRow)*112,172,104,46,'none',C.orange);
- s+=`<path d="M610 ${tickY(0)}V${tickY(probeOffsets.at(-1))}" stroke="${C.muted}" stroke-width="2"/>`;
- probeOffsets.forEach((o,p)=>s+=`<path d="M604 ${tickY(o)}h12" stroke="${C.muted}" stroke-width="2"/>`+(probeOffsets.indexOf(o)===p?text(598,tickY(o)+4,o,'secondary','','end'):''));
- probes.forEach((key,p)=>{if(probeCounts[p])s+=`<path d="M610 ${tickY(probeOffsets[p])}V${tickY(probeOffsets[p+1])}" stroke="${C[key]}" stroke-width="4"/>`+text(622,(tickY(probeOffsets[p])+tickY(probeOffsets[p+1]))/2-12,`p${p}`,'body',C[key]);});
- s+=text(622,tickY(probeOffsets.at(-1))+20,'p2 · EMPTY','secondary',C.orange);
- outputPairs.forEach(([p,r],o)=>{
-  const y=slotY(o),color=C[rows[r].key];
-  s+=text(672,y+26,`o${o}`,'secondary',o===trace?C.orange:'','middle');
-  s+=node(`pair${p}-${r}`,690,y,rect(0,0,200,43,P[rows[r].key],o===trace?C.orange:'none')+text(21,28,`p${p}`,'body')+text(92,27,'→','body',color)+text(145,28,`r${r}`,'body'),`r${r}`);
+ s+=text(20,300,'EXCLUSIVE SCAN','label')+text(20,325,'TRAILING ZERO INCLUDED','secondary');
+ [...probeCounts,0].forEach((n,i)=>s+=node(`match-count${i}`,300+i*65,281,rect(0,0,55,48,'#eff2ee','none')+text(27,32,n,'number','','middle')));
+ s+=arrow('M580 305H686',C.blue);
+ probeOffsets.forEach((n,i)=>s+=node(`out-offset${i}`,715+i*88,281,rect(0,0,78,48,P.B,'none')+text(39,32,n,'number',C.blue,'middle')));
+ s+=text(715,356,'OUTPUT OFFSETS · 5 PAIRS TO ALLOCATE','secondary',C.blue);
+ return s;
+}
+function retrieving(){
+ const slotY=o=>48+o*54,trace=3,[p,r]=outputPairs[trace],rep=groups.find(g=>g.key===probes[p]).rep;
+ let s=text(20,22,'OUTPUT OFFSETS','label')+text(690,22,'OUTPUT SLOT → PAIR','label')+text(925,22,'WARP CHUNKS','label');
+ probeOffsets.forEach((n,i)=>s+=node(`out-offset${i}`,20+i*100,62,text(43,-13,i===probes.length?'END':`p${i}`,'secondary','','middle')+rect(0,0,86,48,P.B,'none')+text(43,32,n,'number',C.blue,'middle')));
+ s+=text(20,165,`Trace output slot ${trace}`,'display',C.orange);
+ s+=text(20,211,`upper_bound(out_offsets, ${trace}) → index ${p+1}`,'body');
+ s+=text(20,247,`probe = ${p+1} − 1 = p${p} (${probes[p]})`,'body');
+ s+=text(20,283,`local = ${trace} − out_offsets[${p}] = ${trace-probeOffsets[p]}`,'body');
+ s+=text(20,319,`build = values[${offsets[rep]} + ${trace-probeOffsets[p]}] = r${r}`,'body',C.orange);
+ outputPairs.forEach(([probe,row],o)=>{
+  const y=slotY(o),color=C[rows[row].key];
+  s+=text(662,y+27,`o${o}`,'secondary',o===trace?C.orange:'','middle');
+  s+=node(`pair${probe}-${row}`,690,y,rect(0,0,200,43,P[rows[row].key],o===trace?C.orange:'none')+text(21,28,`p${probe}`,'body')+text(92,27,'→','body',color)+text(145,28,`r${row}`,'body'));
  });
- s+=arrow(`M686 ${slotY(trace)+21}H412V222`,C.orange);
  warps.forEach(({begin,end,first,last},w)=>{
   const top=slotY(begin),bottom=slotY(end-1)+43;
   s+=`<path d="M903 ${top}h8V${bottom}h-8" fill="none" stroke="${C.ink}" stroke-width="2"/>`;
-  s+=text(925,(top+bottom)/2-14,`WARP ${w}`,'label')+text(925,(top+bottom)/2+4,`o${begin}–${end-1} · p${first}${first===last?'':`…p${last}`}`,'secondary')+text(925,(top+bottom)/2+22,first===last?'NO PER-LANE SEARCH':'UPPER_BOUND PER LANE','secondary');
+  s+=text(925,(top+bottom)/2-14,`WARP ${w}`,'label')+text(925,(top+bottom)/2+4,`o${begin}–${end-1} · p${first}${first===last?'':`…p${last}`}`,'secondary')+text(925,(top+bottom)/2+22,first===last?'REUSE PROBE ROW':'SEARCH PER OUTPUT','secondary');
  });
- s+=text(250,262,`ONE LANE / o = ${trace}`,'label',C.orange);
- s+=text(250,290,`p = upper_bound(offsets, ${trace}) − 1 = ${traceProbe}`,'body');
- s+=text(250,316,`local = ${trace} − offsets[${traceProbe}] = ${trace-probeOffsets[traceProbe]}`,'body');
- s+=text(250,342,`values[${offsets[traceGroup.rep]} + ${trace-probeOffsets[traceProbe]}] = r${traceRow}`,'body');
- s+=text(20,363,`PROBE COUNTS [${probeCounts.join(', ')}] · D: NO MATCH`,'secondary')+text(660,363,`${outputPairs.length} SLOTS / EXACT ALLOCATION · ${outputsPerWarp} PER WARP`,'secondary');
+ s+=text(20,363,'ONE OUTPUT SLOT → ONE MATCHING PAIR','secondary')+text(660,363,'ILLUSTRATIVE 3-OUTPUT CHUNKS','secondary');
+ return s;
+}
+function groupBuilding(){
+ let s=text(20,25,'INPUT ROW','label')+text(424,25,'SAVED COUNT INDEX + RANK','label')+text(743,25,'GROUP COUNTS','label');
+ groupPositions.forEach(([rep,rank],i)=>{
+  const y=55+i*46;
+  s+=chip(i,20,y,145)+arrow(`M180 ${y+21}H410`,C[rows[i].key]);
+  s+=node(`position${i}`,424,y,rect(0,0,209,42,P[rows[i].key],'none')+text(18,27,`r${rep}`,'body',C[rows[i].key])+text(111,27,`rank ${rank}`,'body'));
+ });
+ s+=text(743,99,'The directory holds one','body')+text(743,129,'representative per key.','body');
+ s+=text(743,210,'slot_counts / by representative','secondary');
+ s+=vector(groupCounts,743,252,60,'gb-count');
+ s+=text(743,356,'3 + 2 + 1 = 6 GROUPED ROWS','secondary',C.green);
+ return s;
+}
+function groupCompacting(){
+ let s=text(20,27,'COUNTS / BY REPRESENTATIVE','label')+text(760,27,'OCCUPIED GROUPS','label');
+ s+=vector(groupCounts,20,104,106,'gb-count');
+ s+=arrow('M661 130H734',C.green);
+ groupSlots.forEach((rep,g)=>{
+  const y=72+g*77,key=rows[rep].key;
+  s+=node(`group-slot${g}`,760,y,rect(0,0,295,52,P[key],'none')+text(16,34,`g${g}`,'body',C[key])+text(95,34,`r${rep}`,'key',C[key])+text(213,34,key,'key',C[key]));
+ });
+ s+=text(20,266,'copy_if: select count &gt; 0','body',C.green)+text(20,311,`key_rows = [${groupSlots.map(r=>`r${r}`).join(', ')}]`,'body');
+ s+=text(20,356,'GROUP_SLOTS RESERVES n ENTRIES; G ARE SELECTED','secondary');
+ return s;
+}
+function groupScanning(){
+ let s=text(25,30,'DENSE GROUP COUNTS','label')+text(25,214,'EXCLUSIVE GROUP STARTS','label');
+ groupSlots.forEach((rep,g)=>{
+  const x=210+g*220,key=rows[rep].key;
+  s+=node(`group-count${g}`,x,68,rect(0,0,195,60,P[key],'none')+text(17,35,`g${g} · r${rep}`,'body',C[key])+text(169,39,groupCounts[rep],'number',C[key],'end'));
+  s+=arrow(`M${x+43} 140V222`,C[key]);
+ });
+ groupOffsets.forEach((end,g)=>{
+  const x=210+g*220;
+  s+=node(`gb-offset${g}`,x,241,text(43,-12,g===groupSlots.length?'END':`g${g}`,'secondary','','middle')+rect(0,0,86,56,'#e8f3ec','none')+text(43,38,end,'number',C.green,'middle'));
+ });
+ s+=text(25,356,'SCATTER STARTS BACK TO COUNTS: r0 → 0 · r1 → 3 · r3 → 5','secondary',C.green);
+ return s;
+}
+function grouping(){
+ let s=text(20,24,'ROW / SAVED POSITION','label')+text(513,24,'START + RANK','label')+text(875,24,'GROUPED ROW IDs','label');
+ groupPositions.forEach(([rep,rank],i)=>{
+  const y=59+i*47,start=groupOffsets[groupSlots.indexOf(rep)],dest=start+rank;
+  s+=chip(i,20,y,145)+text(215,y+26,`r${rep} · ${rank}`,'body',C[rows[i].key])+text(513,y+26,`${start} + ${rank} = ${dest}`,'body');
+ });
+ s+=arrow('M720 200H835',C.green);
+ groupedRows.forEach((r,i)=>{
+  const y=59+i*47;
+  s+=text(860,y+26,i,'secondary','','end')+chip(r,875,y,174,`gb-row${r}`);
+ });
+ s+=text(20,365,'DENSE OFFSETS [0, 3, 5, 6] · COUNTS NOW HOLD GROUP STARTS','secondary');
  return s;
 }
 function reducing(){
- let s=text(20,22,'OCCUPIED CSR SEGMENTS','label')+text(605,22,'LOAD + REDUCE / SAME KERNEL','label')+text(908,22,'KEY / RESULT','label');
- groups.forEach((g,k)=>{
+ let s=text(20,22,'DENSE CSR SEGMENTS','label')+text(605,22,'ONE THREAD PER GROUP HERE','label')+text(908,22,'KEY / INT64 SUM','label');
+ denseGroups.forEach((g,k)=>{
   const y=57+k*100;
   s+=groupTag(g.key,20,y+7);
-  g.ids.forEach((r,i)=>s+=chip(r,75+i*112,y));
+  g.ids.forEach((r,i)=>s+=chip(r,75+i*112,y,100,`gb-row${r}`));
   s+=arrow(`M${75+g.ids.length*112+4} ${y+21}H573`,C[g.key]);
   s+=node(`sumexpr${g.key}`,605,y,text(0,28,g.ids.map(r=>rows[r].value).join(' + '),'number',C[g.key]));
   s+=arrow(`M797 ${y+21}H878`,C[g.key]);
@@ -405,8 +522,26 @@ function reducing(){
  s+=text(20,363,'ROW IDS GATHER THE ORIGINAL PAYLOADS','secondary')+text(605,363,'EXAMPLE REDUCTION: SUM','secondary',C.green);
  return s;
 }
+const dispatchSizes=[3,64,2050];
+function dispatching(){
+ let s=text(20,26,'ILLUSTRATIVE GROUP SIZES · NOT THE SIX-ROW EXAMPLE','label')+text(350,59,'THREADS PER SEGMENT','label');
+ dispatchSizes.forEach((size,i)=>{
+  const y=77+i*99;
+  s+=node(`dispatch-group${i}`,20,y,rect(0,0,205,68,P.A,'none')+text(14,29,`${size} ROWS`,'body',C.green)+text(14,51,i===0?'≤ 32':i===1?'33–1024':'> 1024','secondary'));
+  s+=arrow(`M240 ${y+34}H327`,C.green);
+ });
+ s+=node('one-thread',350,86,rect(0,0,357,49,'#fff')+text(17,31,'1 thread → final SUM','body'));
+ s+=node('one-warp',350,185,rect(0,0,357,49,'#fff')+text(17,31,'1 warp → final SUM','body'));
+ s+=node('chunk-blocks',350,279,rect(0,0,357,64,'#fff')+text(17,25,'1024 + 1024 + 2','body')+text(17,47,'3 blocks (256 threads each)','secondary'));
+ s+=arrow('M722 310H772',C.green);
+ s+=node('chunk-partials',790,279,rect(0,0,133,64,P.A,'none')+text(12,27,'3 partials','body',C.green)+text(12,47,'int64 each','secondary'));
+ s+=arrow('M934 310H960',C.green);
+ s+=node('final-block',976,279,rect(0,0,128,64,P.A,'none')+text(10,27,'1 block','body',C.green)+text(10,47,'final SUM','secondary'));
+ s+=text(20,371,'SEGMENT LENGTH SELECTS THE KERNEL · THE CSR IS ALREADY BUILT','secondary');
+ return s;
+}
 function conclusion(){
- let s=icon('hash',30,143,45)+text(95,171,'HashCSR','display')+text(30,220,'KEY → CSR ROW-ID RANGE','label')+text(30,249,'Join and groupby consume this index.','body');
+ let s=icon('hash',30,143,45)+text(95,171,'HashCSR','display')+text(30,220,'COUNT → SCAN → PLACE','label')+text(30,249,'Two implementations of one technique.','body');
  s+=arrow('M381 181H482V90H570',C.blue)+arrow('M482 181V279H570',C.green);
  s+=node('join-sign',604,49,icon('join',0,0,34,C.blue)+text(52,24,'JOIN / EXPAND','label',C.blue)+text(0,80,'One pair per match.','display')+text(0,114,'B, A, D → 5 inner-join pairs','body'));
  s+=node('reduce-sign',604,240,icon('reduce',0,0,34,C.green)+text(52,24,'GROUPBY / REDUCE','label',C.green)+text(0,80,'One result per group.','display')+text(0,114,'A: 30     B: 10     C: 5','body'));
@@ -419,53 +554,49 @@ const passes={
  fill:['Fill kernel','Find rep + decrement + scatter'],
  probe:['Probe kernel','Hash + lookup + count'],
  outscan:['Device scan','Counts → output offsets'],
- retrieve:['Retrieve kernel','Expand ranges → pairs'],
- reduce:['Reduce kernel','Load payloads + reduce']
+ retrieve:['Retrieve kernel','Output slot → pair'],
+ gbbuild:['Build kernel','Insert + count + rank'],
+ gbcompact:['Device select','Keep groups with counts'],
+ gbscan:['Device algorithms','Scan + scatter starts'],
+ gbfill:['Fill kernel','Begin + saved rank'],
+ reduce:['Reduce kernel','Load payloads + sum'],
+ keys:['Device gather','Representative rows → keys'],
+ schedule:['Device algorithms','Select groups + schedule chunks'],
+ dispatch:['Reduction kernels','Thread, warp, or two block passes']
 };
-const shared=['build','scan','fill'];
 const scenes=[
- {name:'Overview',zone:'Shared construction',title:'HashCSR for joins<span class="line">and groupby.</span>',label:'Shared index',icon:'route',color:C.ink,passes:shared,caption:'Join and groupby share capacity sizing, hash-table construction, and CSR construction. Join emits matching row pairs; groupby computes one aggregate per group.',context:'6 build rows<br>3 distinct keys',draw:overview,description:'Six build rows form a HashCSR index shared by join and groupby. Build fuses hashing, insertion, and counting. A separate scan precedes fill. Join enumerates matching row pairs; groupby reduces values within each group.'},
- {name:'Size',zone:'Shared host setup / before the first kernel',title:'Compute hash-table capacity.',label:'Host / no kernel',icon:'hash',color:C.ink,passes:['setup'],caption:'Use all six build rows, not the three distinct keys: uniqueness is not known yet. At the default load factor α = 0.5, reserve 12 slots. The +1 safeguard prevents a full directory at α = 1.',context:'6 build rows<br>12 hash slots<br>Still 3 row bits',draw:sizing,description:'Capacity is computed on the host before the GPU build. N is the build-row count, including duplicates; α is a requested load factor in (0,1], default 0.5. Set R = max(N+1, ceil(N/α)). Use R if α ≤ 0.5; otherwise round R up to a power of two. For N=6 and α=0.5, capacity is max(7,12)=12. This budgets for all keys being unique; three groups will actually occupy 25% of the slots. Row-bit width depends on N, not capacity.'},
- {name:'Hash',zone:'Shared build kernel / hash + insert',title:'Select representative rows.',label:'One fused kernel',icon:'hash',color:C.ink,passes:['build'],caption:'A global atomic CAS chooses each group’s representative. Equal keys reuse that row index; the winner is scheduling-dependent. Fingerprints reject mismatches; a match still needs a full key comparison.',context:'6 input rows<br>3 stored slots',draw:hashing,description:'All six build rows are shown in input order: r0 A12, r1 B7, r2 A8, r3 C5, r4 B3, r5 A10. Row, Key, and Value headers align with their respective input columns. The hexadecimal hash column is omitted. Fingerprints show their first and last three bits: A is 111…011, B is 011…000, and C is 000…000; the 23 hidden middle bits are not necessarily zeros. Original low hash bits 101,101,101,110,101,101 are discarded and replaced by representative indices 000,001,000,011,001,000. The representatives are r0,r1,r0,r3,r1,r0, not the incoming row indices. For each key, the first successful device-scoped atomic CAS on a slot in global memory selects the representative; it need not be the lowest row index. A resolves to directory slot 1, B to slot 2, and C to slot 6: six inputs reuse three stored entries. A and B start at slot 1, but B probes to slot 2. The fingerprint is a quick mismatch filter; the row index finds the original key and the group’s CSR segment. A matching fingerprint still needs a full key comparison. Hashing, insertion, and counting remain one fused kernel.'},
- {name:'Count',zone:'Shared build kernel / count',title:'Count rows per group.',label:'No new launch',icon:'count',color:C.ink,passes:['build'],caption:'HashGraph counts “the number of instances that each hash value appears in the original input.” Here, the fused build kernel instead counts equal-key groups by representative. Nonrepresentatives stay at zero.',context:'Fused with<br>hash + insert',draw:counting,description:'Counting is fused with hashing and insertion in one build kernel, not a separate launch. Representatives r0, r1, r3 have counts 3, 2, 1. The counts array with a terminal zero is [3, 2, 0, 1, 0, 0, 0]. Warp peers may combine their atomic increments.'},
- {name:'Scan',zone:'Shared construction / separate device scan',title:'Scan counts into segment ends.',label:'Kernel boundary',icon:'scan',color:C.ink,passes:['scan'],caption:'“A prefix sum array is computed.” A separate device scan converts group counts to cumulative ends. It runs after build and before fill and may launch several kernels.',context:'Build → scan → fill<br>Not fused',draw:scanning,description:'A separate device scan runs between the build and fill kernels; a scan may launch multiple kernels. Inclusive scan of [3, 2, 0, 1, 0, 0, 0] gives cumulative ends [3, 5, 5, 6, 6, 6, 6].'},
- {name:'Scatter',zone:'Shared fill kernel',title:'Scatter row IDs by group.',label:'One fill kernel',icon:'scatter',color:C.ink,passes:['fill'],caption:'HashGraph stores each group’s entries “in consecutive memory.” Fill combines representative lookup, cursor decrement, and row-ID scatter, producing the final offsets and grouped row IDs used by join and groupby.',context:'Cached keys read<br>the representative<br>instead of finding it',draw:scattering,description:'The fill kernel fuses representative lookup, cursor decrement, and scatter. The cached variant reads representatives instead. One possible values order is [5, 2, 0, 4, 1, 3], with offsets [0, 3, 5, 5, 6, 6, 6]. Join and groupby consume this same CSR.'},
- {name:'Join',zone:'Join / from the shared CSR',title:'Emit matching row pairs.',label:'Two kernels + scan',icon:'join',color:C.blue,passes:['probe','outscan','retrieve'],caption:'The probe kernel fuses hashing, lookup, and match counting. A separate scan sizes the output; the retrieve kernel emits five pairs. D has no inner match; a left join adds (p2, ∅).',context:'Probe → scan<br>→ retrieve',draw:joining,description:'Join consumes the shared CSR. Probe hashing, lookup, and counting share a kernel; a separate scan computes offsets, then the retrieve kernel emits pairs. Counts [2,3,0] give offsets [0,2,5,5] and pairs (p0,r4), (p0,r1), (p1,r5), (p1,r2), (p1,r0).'},
- {name:'Groupby',zone:'Groupby / from the shared CSR',title:'Reduce values per group.',label:'One reduce kernel',icon:'reduce',color:C.green,passes:['reduce'],caption:'Groupby consumes the shared CSR, not the join output. A reduction kernel loads payloads by row ID and aggregates each segment. This example uses addition.',context:'Load + reduce<br>in one kernel',draw:reducing,description:'Groupby directly consumes the same CSR used by join. One reduction kernel loads payloads and applies the chosen aggregation within each segment, without a separate gather. Here the operator is addition: A reduces 10,8,12 to 30; B reduces 3,7 to 10; C reduces 5 to 5.'},
- {name:'Summary',zone:'Shared construction, separate consumers',title:'Join emits pairs; groupby aggregates.',label:'Summary',icon:'route',color:C.ink,passes:shared,caption:'Join and groupby share the build, scan, and fill stages. Join probes and emits matching row pairs. Groupby reduces values within each group. Neither operation consumes the other’s output.',context:'Shared CSR<br>Separate operations',draw:conclusion,description:'The same build kernel, device scan, and fill kernel prepare HashCSR for both operations. Join probes, scans match counts, and emits row pairs. Groupby reduces values within each group. Neither operation consumes the other’s output.'}
+ {name:'Overview',zone:'One technique / two implementations',title:'HashCSR for joins<span class="line">and groupby.</span>',label:'Count → scan → place',icon:'route',color:C.ink,passes:[],caption:'HashCSR organizes equal keys into contiguous ranges of row IDs. cuDF join and groupby build their own versions: join expands matching ranges into pairs; groupby reduces each range to an aggregate.',context:'6 input rows<br>3 distinct keys',draw:overview,description:'The same six input rows illustrate two implementations of the HashCSR technique. Join builds a packed directory and representative-row offsets. Groupby records ranks and compacts groups into a dense CSR.'},
+ {name:'Size',branch:'join',zone:'Join / host setup before the first kernel',title:'Compute hash-table capacity.',label:'Host / no kernel',icon:'hash',color:C.ink,passes:['setup'],caption:'Use all six build rows, not the three distinct keys: uniqueness is not known yet. At the default load factor α = 0.5, reserve 12 slots. The +1 safeguard prevents a full directory at α = 1.',context:'6 build rows<br>12 hash slots<br>Still 3 row bits',draw:sizing,description:'Capacity is computed on the host before the GPU build. N is the build-row count, including duplicates; α is a requested load factor in (0,1], default 0.5. Set R = max(N+1, ceil(N/α)). Capacity is R. For N=6 and α=0.5, capacity is max(7,12)=12. This budgets for all keys being unique; three groups will actually occupy 25% of the slots. Row-bit width depends on N, not capacity.'},
+ {name:'Hash',branch:'join',zone:'Join / build kernel / hash + insert',title:'Select representative rows.',label:'One fused kernel',icon:'hash',color:C.ink,passes:['build'],caption:'A global atomic CAS chooses each group’s representative. Equal keys reuse that row index; the winner is scheduling-dependent. Fingerprints reject mismatches; a match still needs a full key comparison.',context:'6 input rows<br>3 stored slots',draw:hashing,description:'All six build rows are shown in input order: r0 A12, r1 B7, r2 A8, r3 C5, r4 B3, r5 A10. Row, Key, and Value headers align with their respective input columns. The hexadecimal hash column is omitted. Fingerprints show their first and last three bits: A is 111…011, B is 011…101, and C is 000…000; the 23 hidden middle bits are not necessarily zeros. Original low hash bits 101,101,101,110,101,101 are discarded and replaced by representative indices 000,001,000,011,001,000. The representatives are r0,r1,r0,r3,r1,r0, not the incoming row indices. For each key, the first successful device-scoped atomic CAS on a slot in global memory selects the representative; it need not be the lowest row index. A resolves to directory slot 8, B to slot 9, and C to slot 4: six inputs reuse three stored entries. A and B start at slot 8, but B probes to slot 9. The fingerprint is a quick mismatch filter; the row index finds the original key and the group’s CSR segment. A matching fingerprint still needs a full key comparison. Hashing, insertion, and counting remain one fused kernel.'},
+ {name:'Count',branch:'join',zone:'Join / build kernel / count',title:'Count rows per group.',label:'No new launch',icon:'count',color:C.ink,passes:['build'],caption:'The fused build kernel counts rows by representative. Equal keys update the same counter; nonrepresentative entries stay at zero. These counts determine each group’s storage.',context:'Fused with<br>hash + insert',draw:counting,description:'Counting is fused with hashing and insertion in one build kernel, not a separate launch. Representatives r0, r1, r3 have counts 3, 2, 1. The counts array with a terminal zero is [3, 2, 0, 1, 0, 0, 0]. Warp peers may combine their atomic increments.'},
+ {name:'Scan',branch:'join',zone:'Join / separate device scan',title:'Scan counts into segment ends.',label:'Kernel boundary',icon:'scan',color:C.ink,passes:['scan'],caption:'“A prefix sum array is computed.” A separate device scan converts group counts to cumulative ends. It runs after build and before fill and may launch several kernels.',context:'Build → scan → fill<br>Not fused',draw:scanning,description:'A separate device scan runs between the build and fill kernels; a scan may launch multiple kernels. Inclusive scan of [3, 2, 0, 1, 0, 0, 0] gives cumulative ends [3, 5, 5, 6, 6, 6, 6].'},
+ {name:'Scatter',branch:'join',zone:'Join / fill kernel',title:'Scatter row IDs by group.',label:'One fill kernel',icon:'scatter',color:C.ink,passes:['fill'],caption:'Fill finds each row’s representative, decrements its group cursor, and writes the row ID into that slot. The final cursors are segment starts, and each group occupies a contiguous range.',context:'Cached keys read<br>the representative<br>instead of finding it',draw:scattering,description:'The fill kernel fuses representative lookup, cursor decrement, and scatter. The cached variant reads representatives instead. One possible values order is [5, 2, 0, 4, 1, 3], with offsets [0, 3, 5, 5, 6, 6, 6]. The join probe uses this CSR to locate matching build rows.'},
+ {name:'Probe',branch:'join',zone:'Join / probe + output sizing',title:'Count matches, then size the output.',label:'Probe kernel + scan',icon:'join',color:C.blue,passes:['probe','outscan'],caption:'Probe B, A, and D against the join directory. Their ranges contain 2, 3, and 0 build rows. A scan turns these counts into output offsets, reserving five pair slots for retrieval.',context:'3 probe rows<br>5 output pairs',draw:probing,description:'B finds representative r1 and rows r4,r1. A finds representative r0 and rows r5,r2,r0. D has an empty range. An exclusive scan of counts [2,3,0,0], including a terminal zero, gives output offsets [0,2,5,5].'},
+ {name:'Retrieve',branch:'join',zone:'Join / iterate over output slots',title:'Each output slot becomes a pair.',label:'One retrieve kernel',icon:'join',color:C.blue,passes:['retrieve'],caption:'Each output slot locates its probe row, then selects a build row within that match range. Warps process output chunks; when both endpoints belong to one probe row, every lane can reuse it.',context:'Output slot 3<br>→ (p1, r2)',draw:retrieving,description:'Output slots 0 through 4 emit (p0,r4), (p0,r1), (p1,r5), (p1,r2), (p1,r0). Slot 3 maps to p1 using upper_bound on [0,2,5,5], then local index 1 selects build row r2. Illustrative three-output chunks show a mixed-probe chunk and a single-probe chunk.'},
+ {name:'GB Build',branch:'groupby',zone:'Groupby / its own build kernel',title:'Save a slot and rank for each row.',label:'One build kernel',icon:'hash',color:C.green,passes:['gbbuild'],caption:'Groupby inserts each key into a directory of representative rows. In the same kernel, each row increments its group count and saves the count index and its rank within that group.',context:'6 positions<br>3 occupied slots',draw:groupBuilding,description:'For six input rows, the groupby directory has 12 slots and stores representative row indices. Counts use representatives here: [3,2,0,1,0,0]. Saved (count index, rank) pairs are (r0,0), (r1,0), (r0,1), (r3,0), (r1,1), (r0,2). The atomic rank assignment and within-group order are scheduling-dependent.'},
+ {name:'Compact',branch:'groupby',zone:'Groupby / select occupied groups',title:'Compact the occupied groups.',label:'Device select + copy',icon:'count',color:C.green,passes:['gbcompact'],caption:'After build, the directory is released on this small-input path. copy_if selects indices whose counts are positive: r0, r1, and r3. The selected group IDs also identify the representative key rows.',context:'3 group IDs<br>group_slots capacity 6',draw:groupCompacting,description:'Counts [3,2,0,1,0,0] indexed by representative row select group slots [0,1,3]. group_slots reserves six entries and retains that allocation after its logical size shrinks to three. key_rows [0,1,3] copies those indices for key gathering.'},
+ {name:'GB Scan',branch:'groupby',zone:'Groupby / dense offsets',title:'Scan group counts into starts.',label:'Device scan + scatter',icon:'scan',color:C.green,passes:['gbscan'],caption:'An inclusive scan of the three selected counts [3,2,1], after a leading zero, gives dense offsets [0,3,5,6]. Scatter writes each group’s start back into its count slot for fill.',context:'3 groups<br>4 offsets',draw:groupScanning,description:'The three selected representative rows r0,r1,r3 have group counts 3,2,1. Group offsets become [0,3,5,6]. Scatter overwrites slot_counts at r0,r1,r3 with starts 0,3,5. group_slots is released before the fill kernel allocates grouped_rows.'},
+ {name:'GB Fill',branch:'groupby',zone:'Groupby / fill kernel',title:'Place rows using saved ranks.',label:'One fill kernel',icon:'scatter',color:C.green,passes:['gbfill'],caption:'Each row uses its saved count index and rank. Its destination is the group start plus that rank; fill writes the original row ID directly into the dense CSR.',context:'6 grouped row IDs<br>3 contiguous ranges',draw:grouping,description:'One possible rank order places r0,r2,r5 in group A, r1,r4 in B, and r3 in C. With offsets [0,3,5,6], grouped row IDs are [0,2,5,1,4,3]. The fill kernel reads saved positions and group starts, without another hash lookup.'},
+ {name:'Reduce',branch:'groupby',zone:'Groupby / reduce its dense CSR',title:'Reduce values per group.',label:'Reduce + gather keys',icon:'reduce',color:C.green,passes:['reduce','keys'],caption:'Each of these small groups is reduced by one thread, loading payloads through grouped row IDs. SUM widens int32 values to int64. A gather selects one output key from each representative row.',context:'3 output rows<br>A: 30 · B: 10 · C: 5',draw:reducing,description:'Groupby uses dense offsets [0,3,5,6]. A reduces 12,8,10 to 30; B reduces 7,3 to 10; C reduces 5 to 5. All groups fit the one-thread-per-group path. Key rows [0,1,3] gather A,B,C for the output.'},
+ {name:'Dispatch',branch:'groupby',zone:'Groupby / segment-size dispatch',title:'Size chooses the reduction path.',label:'Different workload',icon:'reduce',color:C.green,passes:['schedule','dispatch'],caption:'In another workload, 3 rows use one thread; 64 use one warp; 2050 split into three chunks. Blocks reduce chunks to int64 partials, then a second block reduces those partials.',context:'Alternate input<br>3 + 64 + 2050 rows',draw:dispatching,description:'Alternate workload, not the six-row example. Group sizes 3, 64, and 2050 take the one-thread, one-warp, and two-pass chunked block paths, respectively. The 2050-row group has three chunks of sizes 1024, 1024, 2; each chunk uses one 256-thread block and produces one int64 partial. A second 256-thread block reduces these three partials.'},
+ {name:'Summary',zone:'One technique / two implementations',title:'Join emits pairs; groupby aggregates.',label:'Summary',icon:'route',color:C.ink,passes:[],caption:'Both implementations count rows and place them in contiguous groups. Join retains a lookup directory and expands matches into pairs. Groupby compacts its groups and reduces their payloads.',context:'HashCSR technique<br>Separate builds',draw:conclusion,description:'Join and groupby implement the same count, scan, place principle with different storage and build kernels. Join emits five pairs. Groupby produces three key and sum rows: A30, B10, C5.'}
 ];
 const build=[
  'for_each_n(counting(0), n, [=] (int i) {',
  '  int rep = table.insert(hash(i), i);',
- '  atomicAdd(&counts[rep], 1);',
+ '  atomicAdd(&offsets[rep], 1);',
  '});'
-];
-const pipeline=[
- '// shared construction',
- 'size_t cap = capacity(n, alpha);',
- 'for_each_n(counting(0), n, insert_and_count);',
- 'inclusive_scan(counts, offsets);',
- 'for_each_n(counting(0), n, scatter_row_ids);',
- '',
- '// join: probe → scan → retrieve',
- 'for_each_n(counting(0), m, probe_and_count);',
- 'exclusive_scan(match_counts, out_offsets);',
- 'for_each_n(counting(0), total, emit_pair);',
- '',
- '// groupby: one reduction',
- 'for_each_n(counting(0), n, reduce_segment);'
 ];
 const code={
  Size:{lines:[
   '// host, before any kernel',
-  'size_t R = max(n + 1, ceil(n / alpha));',
-  'size_t cap = alpha <= 0.5 ? R : bit_ceil(R);',
+  'size_t cap = max(n + 1, ceil(n / alpha));',
   'hash_table table(cap);'
- ],hot:[1,2]},
+ ],hot:[1]},
  Hash:{lines:build,hot:[1]},
  Count:{lines:build,hot:[2]},
  Scan:{lines:[
-  'inclusive_scan(counts.begin(), counts.end(),',
+  'inclusive_scan(offsets.begin(), offsets.end(),',
   '               offsets.begin());',
   '// offsets holds segment ends until fill'
  ],hot:[0,1]},
@@ -477,7 +608,7 @@ const code={
   '});',
   '// offsets now holds segment starts'
  ],hot:[2,3]},
- Join:{lines:[
+ Probe:{lines:[
   'for_each_n(counting(0), m, [=] (int p) {',
   '  int g = group[p] = table.find(probe_hash(p), p);',
   '  match_counts[p] = g == EMPTY ? 0',
@@ -485,38 +616,105 @@ const code={
   '});',
   'exclusive_scan(match_counts.begin(),',
   '               match_counts.end(),',
-  '               out_offsets.begin());',
-  'for_each_n(counting(0), total, [=] (int k) {',
-  '  int p = upper_bound(out_offsets, k) - 1;',
+  '               out_offsets.begin(), int64(0));',
+  'int64 total = out_offsets[m];'
+ ],hot:[1,2,3,5,6,7,8]},
+ Retrieve:{lines:[
+  'for_each_n(counting(int64(0)), total, [=](int64 k) {',
+  '  int p = upper_bound(out_offsets, k)',
+  '        - out_offsets.begin() - 1;',
   '  int j = k - out_offsets[p];',
   '  left[k] = p;',
   '  right[k] = values[offsets[group[p]] + j];',
   '});'
- ],hot:[1,2,3,5,6,7,11,12]},
- Groupby:{lines:[
-  'for_each_n(counting(0), n, [=] (int r) {',
-  '  auto first = values.begin() + offsets[r];',
-  '  auto last = values.begin() + offsets[r + 1];',
-  '  if (first == last) return;',
-  '  sums[r] = reduce(seq,',
-  '      make_permutation_iterator(payload, first),',
-  '      make_permutation_iterator(payload, last));',
+ ],hot:[1,2,3,4,5]},
+ 'GB Build':{lines:[
+  'for_each_n(counting(0), n, [=](int i) {',
+  '  int r = table.insert_or_find_rep(i);',
+  '  int rank = atomicAdd(&counts[r], 1);',
+  '  positions[i] = {r, rank};',
   '});'
- ],hot:[4,5,6]},
- Summary:{lines:pipeline,hot:[6,7,8,9,11,12]}
+ ],hot:[1,2,3]},
+ Compact:{lines:[
+  'copy_if(counting(0, n), group_slots,',
+  '        [=](int r) { return counts[r] > 0; });',
+  'copy(group_slots, key_rows);'
+ ],hot:[0,1,2]},
+ 'GB Scan':{lines:[
+  'offsets[0] = 0;',
+  'inclusive_scan(counts[group_slots], offsets + 1);',
+  'scatter(offsets[0:G], group_slots, counts);'
+ ],hot:[1,2]},
+ 'GB Fill':{lines:[
+  'for_each_n(counting(0), n, [=](int i) {',
+  '  auto [r, rank] = positions[i];',
+  '  grouped_rows[counts[r] + rank] = i;',
+  '});'
+ ],hot:[1,2]},
+ Reduce:{lines:[
+  'for_each_n(counting(0), G, [=](int g) {',
+  '  int begin = offsets[g], end = offsets[g + 1];',
+  '  sums[g] = transform_reduce(seq, ids[begin:end],',
+  '      int64(0), plus{},',
+  '      [=](int r) { return int64(payload[r]); });',
+  '});',
+  'gather(keys, key_rows, out_keys);'
+ ],hot:[2,3,4,6]},
+ Dispatch:{lines:[
+  'auto wide = copy_if(groups, size(g) > 32);',
+  'auto mid = partition(wide, size(g) <= 1024);',
+  'for_each_n(counting(0), G, thread_sum_if_small);',
+  'for_each(wide.begin(), mid, warp_sum);',
+  'auto chunks = split(mid, wide.end(), 1024);',
+  'for_each(chunks, block_sum_to_partial);',
+  'for_each(mid, wide.end(), block_sum_partials);'
+ ],hot:[0,1,2,3,4,5,6]}
+};
+const memoryVariables={n:'Number of build rows',m:'Number of probe rows',J:'Number of join outputs',G:'Number of groups',cap:'Number of directory slots',position:'uint32 index + int32 rank',Wbuild:'Build scan workspace (bytes)',Wprobe:'Probe scan workspace (bytes)',Wgroup:'Group scan workspace (bytes)',Wgather:'Key gather workspace (bytes)',H:'Groups wider than 32 rows',L:'Groups wider than 1024 rows',Q:'Chunks of long groups'};
+const joinStorage=[['slots','cap × sizeof(uint32)'],['offsets','(n+1) × sizeof(int32)']];
+const joinIndex=[...joinStorage,['row IDs','n × sizeof(int32)']];
+const buildMemory={title:'Join buffers / after allocation',variables:['n','cap'],rows:joinStorage,note:'offsets holds counts → ends → starts in place.',stage:'After allocation',total:'cap × sizeof(uint32) + (n+1) × sizeof(int32)'};
+const memory={
+ Size:buildMemory,
+ Hash:buildMemory,
+ Count:buildMemory,
+ Scan:{title:'Join buffers / during scan',variables:['n','cap','Wbuild'],rows:[...joinStorage,['scan workspace','Wbuild']],note:'The workspace is released before row IDs are allocated.',stage:'During scan',total:'cap × sizeof(uint32) + (n+1) × sizeof(int32) + Wbuild'},
+ Scatter:{title:'Join buffers / after fill',variables:['n','cap'],rows:joinIndex,note:'These buffers form the join index used during probing.',stage:'After fill',total:'cap × sizeof(uint32) + (2n+1) × sizeof(int32)'},
+ Probe:{title:'Join buffers / probe → scan',variables:['n','cap','m','Wprobe'],rows:[...joinIndex,['probe_groups','m × sizeof(int32)'],['match_counts','(m+1) × sizeof(int32)'],['out_offsets','(m+1) × sizeof(int64)'],['counter','sizeof(uint64)'],['scan workspace','Wprobe']],note:'Counts, counter, and workspace are released before pair allocation.',stage:'During probe scan',total:'cap × sizeof(uint32) + (2n+2m+2) × sizeof(int32) + (m+1) × sizeof(int64) + sizeof(uint64) + Wprobe'},
+ Retrieve:{title:'Join buffers / retrieve',variables:['n','cap','m','J'],rows:[...joinIndex,['probe_groups','m × sizeof(int32)'],['out_offsets','(m+1) × sizeof(int64)'],['Output pair columns','2J × sizeof(int32)']],note:'J determines final output size; those columns are returned to the caller.',stage:'During retrieve',total:'cap × sizeof(uint32) + (2n+m+1) × sizeof(int32) + (m+1) × sizeof(int64)'},
+ 'GB Build':{title:'Groupby buffers / build',variables:['n','cap','position'],rows:[['slots','cap × sizeof(int32)'],['counts','n × sizeof(int32)'],['positions','n × sizeof(position)']],note:'The directory is released after build on this representative-counting path.',stage:'During build',total:'(cap+n) × sizeof(int32) + n × sizeof(position)'},
+ Compact:{title:'Groupby buffers / compact',variables:['n','G','position'],rows:[['counts','n × sizeof(int32)'],['positions','n × sizeof(position)'],['group_slots','n × sizeof(uint32)'],['key_rows','G × sizeof(int32)']],note:'G entries are selected; group_slots retains capacity n. Selection workspace has been released.',stage:'After copying key rows',total:'(n+G) × sizeof(int32) + n × sizeof(position) + n × sizeof(uint32)'},
+ 'GB Scan':{title:'Groupby buffers / scan',variables:['n','G','position','Wgroup'],rows:[['counts','n × sizeof(int32)'],['positions','n × sizeof(position)'],['group_slots','n × sizeof(uint32)'],['key_rows','G × sizeof(int32)'],['offsets','(G+1) × sizeof(int32)'],['scan workspace','Wgroup']],note:'Scatter reuses counts to hold starts after the scan.',stage:'During scan',total:'(n+2G+1) × sizeof(int32) + n × sizeof(position) + n × sizeof(uint32) + Wgroup'},
+ 'GB Fill':{title:'Groupby buffers / fill',variables:['n','G','position'],rows:[['counts / starts','n × sizeof(int32)'],['positions','n × sizeof(position)'],['key_rows','G × sizeof(int32)'],['offsets','(G+1) × sizeof(int32)'],['grouped_rows','n × sizeof(int32)']],note:'group_slots and scan workspace are released before fill.',stage:'During fill',total:'(2n+2G+1) × sizeof(int32) + n × sizeof(position)'},
+ Reduce:{title:'Groupby buffers / gather keys',variables:['n','G','Wgather'],rows:[['key_rows','G × sizeof(int32)'],['offsets','(G+1) × sizeof(int32)'],['grouped_rows','n × sizeof(int32)'],['Output sums','G × sizeof(int64)'],['Output keys','G × sizeof(int32)'],['gather workspace','Wgather']],note:'The groupby releases the grouping buffers after gathering keys.',stage:'During key gather',total:'(n+2G+1) × sizeof(int32) + Wgather'},
+ Dispatch:{title:'Groupby buffers / chunk reduction',variables:['n','G','H','L','Q'],rows:[['key_rows','G × sizeof(int32)'],['offsets','(G+1) × sizeof(int32)'],['grouped_rows','n × sizeof(int32)'],['warp_groups','H × sizeof(int32)'],['group_chunks','(L+1) × sizeof(int32)'],['chunk_ranges','2Q × sizeof(int32)'],['chunk_order','Q × sizeof(int32)'],['partials','Q × sizeof(int64)'],['Output sums','G × sizeof(int64)']],note:'Alternate workload: n=2117, G=3, H=2, L=1, Q=3. Transient sort scratch is already released.',stage:'During chunk reduction',total:'(n+2G+H+L+3Q+2) × sizeof(int32) + Q × sizeof(int64)'}
 };
 const escapeHtml=value=>value.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const highlight=line=>escapeHtml(line).replace(/(\/\/.*$)|\b(for_each_n|inclusive_scan|exclusive_scan|reduce|upper_bound|make_permutation_iterator|counting)\b/g,(match,comment)=>comment?`<span class="comment">${match}</span>`:`<span class="fn">${match}</span>`);
+const highlight=line=>escapeHtml(line).replace(/(\/\/.*$)|\b(for_each_n|inclusive_scan|exclusive_scan|transform_reduce|copy_if|copy|scatter|gather|upper_bound|counting)\b/g,(match,comment)=>comment?`<span class="comment">${match}</span>`:`<span class="fn">${match}</span>`);
 const codeMarkup=scene=>(code[scene.name]?.lines??[]).map((line,i)=>`<span class="line${code[scene.name].hot.includes(i)?' hot':''}">${highlight(line)||' '}</span>`).join('');
+const memoryTotalMarkup=total=>total.split(' + ').map((term,i,terms)=>{
+ const [factor,unit]=term.split(' × ');
+ return `<span class="memory-factor">${escapeHtml(factor)}</span><span class="memory-unit">${unit?` × ${escapeHtml(unit)}`:''}${i<terms.length-1?' + ':''}</span>`;
+}).join('');
+const memoryMarkup=scene=>{
+ const data=memory[scene.name];
+ return data?`<h2>${escapeHtml(data.title)}</h2><p class="memory-variables">${data.variables.map(v=>`<span><code>${v}</code>: ${memoryVariables[v]}</span>`).join('')}</p><dl class="memory-rows">${data.rows.map(([name,size])=>`<div><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(size)}</dd></div>`).join('')}</dl><p>${escapeHtml(data.note)}</p><div class="memory-total"><strong>Temporary storage · ${escapeHtml(data.stage)}</strong><span class="memory-formula">${memoryTotalMarkup(data.total)}</span></div>`:'';
+};
 const references=[
  ['paper-overview','Green 2021 · abstract'],
  ['capacity-source','cuDF · capacity sizing'],
  ['paper-adaptation','HashGraph / this variant'],
- ['paper-count','HashGraph · §3.2 [v1]'],
+ ['paper-count','Green · §3.2 [v1]'],
  ['paper-scan','HashGraph · §3.2 [v1]'],
- ['paper-scatter','HashGraph · §3.2 [v1]'],
- ['paper-join','HashGraph · §3.4 [v1]'],
- ['paper-groupby','HashGraph · §1 [v1]'],
+ ['paper-scatter','Green · §3.2 [v1]'],
+ ['paper-join','Green · §3.4 [v1]'],
+ ['retrieve-source','cuDF · output retrieval'],
+ ['groupby-build-source','cuDF · build + rank'],
+ ['groupby-build-source','cuDF · compaction'],
+ ['groupby-build-source','cuDF · dense scan'],
+ ['groupby-build-source','cuDF · fill'],
+ ['paper-groupby','cuDF · reduction'],
+ ['groupby-dispatch-source','cuDF · size dispatch'],
  ['paper-layout','HashGraph · §3.1 [v1]']
 ];
 const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -524,14 +722,14 @@ const executionMarkup=scene=>scene.passes.map(id=>`<span class="pass" data-pass=
 let current=0;
 function measureLayout(){
  const screen=$('screen'),probe=screen.cloneNode(true);
- probe.querySelector('#stage').remove();
+ probe.querySelector('#stage').replaceChildren();
  probe.removeAttribute('id');
  probe.querySelectorAll('[id]').forEach(element=>element.removeAttribute('id'));
  Object.assign(probe.style,{position:'fixed',top:'0',left:'0',width:`${screen.clientWidth}px`,visibility:'hidden',pointerEvents:'none'});
  probe.setAttribute('aria-hidden','true');
  probe.setAttribute('inert','');
- const parts={eyebrow:probe.querySelector('.eyebrow'),headline:probe.querySelector('h1'),execution:probe.querySelector('.execution'),caption:probe.querySelector('.caption'),code:probe.querySelector('.code')};
- const heights={eyebrow:0,headline:0,execution:0,caption:0,code:0};
+ const parts={eyebrow:probe.querySelector('.eyebrow'),headline:probe.querySelector('h1'),execution:probe.querySelector('.execution'),caption:probe.querySelector('.caption'),code:probe.querySelector('.code'),memory:probe.querySelector('.memory')};
+ const heights={eyebrow:0,headline:0,execution:0,caption:0,code:0,memory:0};
  Object.values(parts).forEach(element=>element.style.minHeight='0');
  document.body.append(probe);
  scenes.forEach((scene,i)=>{
@@ -543,13 +741,14 @@ function measureLayout(){
   parts.caption.querySelector('.source-button').textContent=references[i][1];
   parts.caption.querySelector('.context').innerHTML=scene.context;
   parts.code.firstElementChild.innerHTML=codeMarkup(scene);
+  parts.memory.innerHTML=memoryMarkup(scene);
   Object.entries(parts).forEach(([name,element])=>heights[name]=Math.max(heights[name],element.getBoundingClientRect().height));
  });
  probe.remove();
  Object.entries(heights).forEach(([name,height])=>screen.style.setProperty(`--${name}-height`,`${Math.ceil(height)}px`));
 }
-const stops=[[3,40],[14,40],[29,40],[39,40],[54,40],[67,40],[84,15],[84,67],[98,40]];
-$('stations').innerHTML=scenes.map((scene,i)=>`<li class="station ${i===1?'setup':i===6?'join':i===7?'groupby':''}" style="left:${stops[i][0]}%;top:${stops[i][1]}px"><button type="button" data-step="${i}" aria-label="Go to slide ${i+1}: ${scene.name}. ${scene.zone}"><span class="point"></span><span class="name">${scene.name}</span></button></li>`).join('');
+const stops=[[3,50],[13,25],[24,25],[35,25],[46,25],[57,25],[68,25],[80,25],[22,80],[36,80],[49,80],[62,80],[75,80],[88,80],[96,50]];
+$('stations').innerHTML=scenes.map((scene,i)=>`<li class="station ${scene.branch||''}" style="left:${stops[i][0]}%;top:${stops[i][1]}px"><button type="button" data-step="${i}" aria-label="Go to slide ${i+1}: ${scene.name}. ${scene.zone}"><span class="point"></span><span class="name">${scene.name}</span></button></li>`).join('');
 function render(index,animate=true){
  if(index<0||index>=scenes.length)return;
  const direction=index>=current?1:-1;
@@ -584,9 +783,10 @@ function render(index,animate=true){
  $('context').innerHTML=scene.context;
  $('execution').innerHTML=executionMarkup(scene);
  $('code').innerHTML=codeMarkup(scene);
+ $('memory').innerHTML=memoryMarkup(scene);
  $('code-panel').style.setProperty('--hot',scene.color);
  $('code-panel').style.visibility=code[scene.name]?'':'hidden';
- $('route-map').dataset.branch=index===6?'join':index===7?'groupby':'';
+ $('route-map').dataset.branch=scene.branch||'';
  $('route-map').dataset.build=String(index===2||index===3);
  $('stage').innerHTML=diagram(scene.draw(),scene.title.replace(/<[^>]*>/g,' '),scene.description);
  $('page').textContent=`${String(index+1).padStart(2,'0')} / ${String(scenes.length).padStart(2,'0')}`;
@@ -595,7 +795,7 @@ function render(index,animate=true){
  document.querySelectorAll('[data-step]').forEach(button=>{
   const step=Number(button.dataset.step);
   if(step===index)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
-  button.parentElement.classList.toggle('visited',step<=5&&step<index);
+  button.parentElement.classList.toggle('visited',step<index&&scenes[step].branch===scene.branch);
  });
  const svg=stage.querySelector('svg');
  const moving=[...svg.querySelectorAll('.moving')];
