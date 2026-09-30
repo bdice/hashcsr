@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f8faf7">
+<title>HashCSR: Join and Groupby</title>
+<style>
+:root{--paper:#f8faf7;--ink:#252d2b;--muted:#64706b;--line:#d9e0da;--green:#007c46;--blue:#155bce;--orange:#bc480c;--pale-green:#e8f3ec;--pale-blue:#eaf0fd;--pale-orange:#fff0e5;--ease:cubic-bezier(.2,.75,.2,1)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+button,a{-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:5px}
+button{touch-action:manipulation}
+.shell{max-width:1500px;min-height:100svh;margin:auto;padding:30px 52px 24px;display:flex;flex-direction:column}
+.text-button{border:0;background:none;padding:8px 0;text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:.1em;cursor:pointer}
+.text-button:hover{color:var(--blue)}
+.screen{flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 0 20px}
+.heading{display:grid;grid-template-columns:1fr 210px;align-items:start;gap:20px}
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;margin-bottom:17px;min-height:var(--eyebrow-height,0px)}
+.zone-dot{width:8px;height:8px;background:var(--green)}
+h1{font-size:clamp(40px,4.8vw,70px);font-weight:600;letter-spacing:-.058em;line-height:1.04;margin:0;max-width:930px;min-height:max(1.1em,var(--headline-height,0px))}
+h1 .line{display:block}
+.stop-sign{text-align:right;padding-top:2px}
+.stop-number{font-size:45px;line-height:1;font-weight:400;letter-spacing:-.06em;color:var(--muted)}
+.stop-label{margin-top:10px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.execution{display:flex;flex-wrap:wrap;align-items:center;align-content:flex-start;gap:10px;margin-top:17px;min-height:max(34px,var(--execution-height,0px));font-size:10px;text-transform:uppercase;letter-spacing:.035em}
+.pass{display:inline-flex;align-items:center;gap:12px;border:1px solid var(--line);padding:8px 11px}
+.pass b{font-size:9px;letter-spacing:.08em;white-space:nowrap}
+.pass span{color:var(--muted)}
+.pass[data-pass="setup"]{border:0;padding-left:0}
+.boundary{color:var(--muted);font-size:16px}
+.stage{position:relative;width:100%;margin:18px 0 13px}
+.stage svg{display:block;width:100%;height:auto;overflow:visible}
+.stage>svg{position:relative;z-index:1}
+.stage>svg.outgoing{position:absolute;inset:0;z-index:0;pointer-events:none}
+.stage text{font-family:Arial,Helvetica,sans-serif;fill:var(--ink);font-variant-numeric:tabular-nums}
+.stage .label{font-size:11px;font-weight:700;letter-spacing:1.15px}
+.stage .table-header{font-size:10px;font-weight:700;letter-spacing:.5px}
+.stage .secondary{font-size:11px;fill:var(--muted);letter-spacing:.6px}
+.stage .body{font-size:17px;letter-spacing:-.2px}
+.stage .bits{font-family:Consolas,'Liberation Mono',monospace;font-size:15px;letter-spacing:0}
+.stage .number{font-size:25px;font-weight:500;letter-spacing:-.7px}
+.stage .key{font-size:20px;font-weight:700}
+.stage .fine{font-size:12px;fill:var(--muted)}
+.stage .display{font-size:36px;font-weight:600;letter-spacing:-1.5px}
+.stage .big-number{font-size:46px;letter-spacing:-2px}
+.caption{display:grid;grid-template-columns:150px minmax(0,780px) 1fr;align-items:start;gap:22px;min-height:max(76px,var(--caption-height,0px));border-top:1px solid var(--line);padding-top:18px}
+.caption-label{display:flex;align-items:center;min-height:28px;gap:9px;font-size:10px;letter-spacing:.09em;font-weight:700;text-transform:uppercase;padding-top:4px}
+.caption-label svg{width:17px;height:17px;flex:none}
+.source-button{display:block;margin-top:8px;padding:0;border:0;background:none;color:var(--blue);font-size:10px;line-height:1.5;text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.caption p{font-size:15px;line-height:1.65;margin:0;letter-spacing:-.1px}
+.caption .context{font-size:10px;line-height:1.7;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;text-align:right}
+.navigation{display:grid;grid-template-columns:96px 1fr 96px;align-items:center;gap:28px;margin-top:8px;padding-top:19px;border-top:1px solid var(--line)}
+.nav-button{border:1px solid var(--ink);background:#fff;padding:12px;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.08em;font-weight:700;cursor:pointer;text-transform:uppercase}
+.nav-button svg{width:22px;height:22px;flex:none}
+#next{background:var(--blue);border-color:var(--blue);color:#fff}
+.nav-button:hover:not(:disabled){box-shadow:0 0 0 2px var(--ink)}
+.nav-button:disabled{opacity:.3;cursor:default}
+.route-map{position:relative;height:91px;min-width:0}
+.route-map>svg{position:absolute;width:100%;height:100%;inset:0;overflow:visible}
+.route-map path,.route-map rect{vector-effect:non-scaling-stroke}
+.route-map .fused{fill:#eef2ed;stroke:var(--line)}
+.route-map[data-build="true"] .fused{stroke:var(--ink)}
+.route-map .join-route{stroke:var(--blue);opacity:.5}
+.route-map .groupby-route{stroke:var(--green);opacity:.5}
+.route-map[data-branch="join"] .join-route,.route-map[data-branch="groupby"] .groupby-route{opacity:1;stroke-width:2.5}
+.route-heading,.fusion-label{position:absolute;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+.route-heading{top:0;left:14%}
+.fusion-label{top:76px;left:34%;transform:translateX(-50%);white-space:nowrap}
+.stations{list-style:none;margin:0;padding:0}
+.station{position:absolute;transform:translate(-50%,-7px);text-align:center}
+.station button{position:relative;z-index:1;background:none;border:0;padding:0 3px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:34px}
+.station .point{display:block;width:14px;height:14px;border:3px solid var(--paper);box-shadow:inset 0 0 0 1px #8c9891;background:var(--paper);border-radius:50%}
+.station .name{font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.station button[aria-current="step"] .point{box-shadow:none;background:var(--ink)}
+.station button[aria-current="step"] .name{color:var(--ink);font-weight:700}
+.station.visited .point{box-shadow:none;background:#8c9891}
+.station.join .name{color:var(--blue)}
+.station.groupby .name{color:var(--green)}
+.station.join button[aria-current="step"] .point{background:var(--blue)}
+.station.groupby button[aria-current="step"] .point{background:var(--green)}
+.bottom-note{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:17px;font-size:9px;letter-spacing:.095em;text-transform:uppercase;color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+dialog{width:min(640px,calc(100% - 32px));padding:32px;border:1px solid var(--line);background:var(--paper);color:var(--ink);max-height:85svh;overflow:auto}
+dialog::backdrop{background:#15231fc9;backdrop-filter:blur(5px)}
+.paper-card{margin:24px 0;padding-top:16px;border-top:1px solid var(--line);scroll-margin-top:24px}
+.paper-card h4{margin:0 0 12px;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.paper-card blockquote{margin:14px 0;padding-left:16px;border-left:3px solid var(--blue);font-size:16px;line-height:1.6}
+.paper-card:focus{outline:2px solid var(--blue);outline-offset:7px}
+.dialog-heading{display:flex;align-items:start;justify-content:space-between;gap:20px}dialog h2{font-size:31px;letter-spacing:-1px;margin:0 0 24px}dialog h3{font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:24px 0 8px}dialog p,dialog li{font-size:14px;line-height:1.7}dialog a{color:var(--blue);text-underline-offset:3px}dialog ul{padding-left:20px}dialog .close{padding:8px;border:1px solid var(--line);background:none;cursor:pointer;line-height:1}dialog code{font-size:12px;overflow-wrap:anywhere}.source-note{color:var(--muted);font-size:12px!important}
+@media(min-width:901px){.stage{max-width:min(100%,calc((100svh - 660px)*2.979));align-self:center}}
+@media(min-width:1500px){.shell{padding-top:36px}.stage{margin-top:35px}}
+@media(max-height:900px) and (min-width:800px){.shell{padding:18px 42px 16px}.screen{padding:20px 0 12px}.eyebrow{margin-bottom:12px}h1{font-size:clamp(36px,3.5vw,46px)}.execution{margin-top:12px}.stage{max-width:min(1100px,max(650px,calc((100svh - 495px)*2.979)));align-self:center;margin:12px 0}.caption{min-height:max(63px,var(--caption-height,0px));padding-top:12px}.navigation{padding-top:10px}.bottom-note{margin-top:10px}}
+@media(max-width:900px){.shell{padding:22px 26px}.heading{grid-template-columns:1fr 95px}.caption{grid-template-columns:120px 1fr}.caption .context{display:none}.navigation{gap:15px;grid-template-columns:96px 1fr 96px}.station .name{font-size:8px}}
+@media(max-width:600px){.shell{padding:20px 20px 18px;min-height:100svh}.screen{justify-content:center;padding-top:24px}.heading{grid-template-columns:1fr 48px;gap:8px}h1{font-size:39px}.eyebrow{font-size:8px;letter-spacing:.08em}.stop-number{font-size:33px}.stop-label{display:none}.stage{margin:10px 0}.caption{grid-template-columns:1fr;gap:10px;padding-top:15px}.caption p{font-size:14px;line-height:1.6}.caption-label{font-size:9px}.navigation{grid-template-columns:1fr 1fr;gap:8px}.route-map{grid-column:1 / -1;grid-row:1}.nav-button{width:112px}#back{grid-column:1;grid-row:2;justify-self:start}#next{grid-column:2;grid-row:2;justify-self:end}.station .name{font-size:7px}.station button{padding:0;min-width:22px}.route-heading,.fusion-label{font-size:6px;letter-spacing:0}.execution{gap:6px;font-size:8px}.pass{padding:6px;gap:6px}.pass b{font-size:8px}.execution .pass span{display:none}.bottom-note .keyboard-hint{display:none}.text-button{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+<main class="screen" id="screen" aria-label="Interactive presentation. Use Back and Next, the arrow keys, or the timeline buttons to select a slide.">
+  <div class="heading">
+    <div><div class="eyebrow"><span class="zone-dot" id="zone"></span><span id="eyebrow"></span></div><h1 id="headline">HashCSR for joins<span class="line">and groupby.</span></h1></div>
+    <div class="stop-sign" aria-hidden="true"><div class="stop-number" id="number"></div><div class="stop-label" id="stop-label"></div></div>
+  </div>
+  <div class="execution" id="execution" role="group" aria-label="Execution stages. Host setup is unboxed. Outlined boxes show GPU stages; device scans may launch several kernels. Arrows mark execution boundaries."></div>
+  <div class="stage" id="stage"></div>
+  <div class="caption"><div><div class="caption-label" id="caption-label"></div><button type="button" class="source-button" id="source" aria-haspopup="dialog">Green 2021 · abstract</button></div><p id="caption"></p><div class="context" id="context"></div></div>
+</main>
+<nav class="navigation" aria-label="Presentation navigation">
+  <button type="button" class="nav-button" id="back" aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12H3m7-7-7 7 7 7"/></svg><span>Back</span></button>
+  <div class="route-map" id="route-map">
+    <svg viewBox="0 0 1000 91" preserveAspectRatio="none" fill="none" stroke="var(--line)" stroke-width="1.5" aria-hidden="true"><rect class="fused" x="240" y="25" width="200" height="43"/><path d="M30 40H730"/><path class="join-route" d="M730 40V15H900V40"/><path class="groupby-route" d="M730 40V67H900V40"/><path class="summary-route" d="M900 40H980"/></svg>
+    <span class="route-heading">Shared setup + build</span><span class="fusion-label">One build kernel</span>
+    <ol class="stations" id="stations" aria-label="Host sizing comes first. Hash and count share one kernel, followed by scan and fill. Join and groupby independently consume the same CSR. The last slide summarizes both operations."></ol>
+  </div>
+  <button type="button" class="nav-button" id="next" aria-label="Next slide"><span>Next</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18m-7-7 7 7-7 7"/></svg></button>
+</nav>
+<footer class="bottom-note"><span class="keyboard-hint">Back / Next · Or use ← →</span><button type="button" class="text-button" id="about" aria-haspopup="dialog">Notes &amp; sources</button><span id="page"></span></footer>
+</div>
+<div class="sr-only" role="status" aria-live="polite" id="status"></div>
+<dialog id="notes" aria-labelledby="notes-title">
+  <div class="dialog-heading"><h2 id="notes-title">Notes &amp; sources</h2><button type="button" class="close" id="close-notes" aria-label="Close notes">✕</button></div>
+  <h3>What this depicts</h3>
+  <p>HashCSR combines a hash lookup with a compressed sparse row (CSR) layout: each group owns a contiguous segment of build-row IDs. Join probes find the segment and expand its members.</p>
+  <p>Join and groupby share the same HashCSR construction: build, scan, fill. Only the consumer changes. Join probes the index and expands matches; groupby traverses its occupied segments and reduces payloads. The join diagrams follow the packed, representative-row-indexed design in <a href="https://github.com/NVIDIA/cudf/pull/24231" target="_blank" rel="noopener noreferrer">cuDF PR #24231</a>, revision <code>c118ec760e6d</code>.</p>
+  <h3>Research reference</h3>
+  <p>Oded Green. 2021. <cite>HashGraph—Scalable Hash Tables Using a Sparse Graph Data Structure.</cite> <em>ACM Transactions on Parallel Computing</em> 8(2), 1–17. <a href="https://dl.acm.org/doi/10.1145/3460872" target="_blank" rel="noopener noreferrer">doi:10.1145/3460872</a>.</p>
+  <p class="source-note">The abstract excerpt below is from the published abstract. Other quotations and section/page locators refer explicitly to the author’s <a href="https://arxiv.org/abs/1907.02900v1" target="_blank" rel="noopener noreferrer">open 2019 preprint, arXiv:1907.02900v1</a>, not to the journal’s pagination. Quotations are embedded here for offline reading.</p>
+  <section class="paper-card" id="paper-overview" tabindex="-1" aria-labelledby="paper-overview-title">
+    <h4 id="paper-overview-title">The CSR connection</h4>
+    <blockquote cite="https://dl.acm.org/doi/10.1145/3460872">“uses concepts taken from sparse graph representations”</blockquote>
+    <p class="source-note">— Green (2021), <a href="https://dl.acm.org/doi/10.1145/3460872" target="_blank" rel="noopener noreferrer">published abstract</a>.</p>
+    <p>This is the central connection: represent each bucket or group with an offset-delimited adjacency range instead of a linked list of individual entries.</p>
+  </section>
+  <section class="paper-card" id="capacity-source" tabindex="-1" aria-labelledby="capacity-source-title">
+    <h4 id="capacity-source-title">Capacity is computed before hashing</h4>
+    <p>Let <code>N</code> be the number of build rows, including duplicates, and let <code>α</code> be the requested load factor (<code>0 &lt; α ≤ 1</code>; default <code>0.5</code>). The host computes:</p>
+    <p><code>R = max(N + 1, ceil(N / α))</code></p>
+    <ul>
+      <li>If <code>α ≤ 0.5</code>, capacity is <code>R</code>, without power-of-two rounding.</li>
+      <li>If <code>α &gt; 0.5</code>, capacity is <code>bit_ceil(R)</code>: the smallest power of two at least as large as <code>R</code>.</li>
+    </ul>
+    <p>For this example, <code>N = 6</code> and <code>α = 0.5</code>, so <code>R = max(7, 12) = 12</code> and capacity is <strong>12 slots</strong>. At <code>α = 0.75</code>, <code>R = 8</code> and capacity is 8; at <code>α = 1</code>, <code>R = 7</code> rounds up to 8.</p>
+    <p>The <code>N + 1</code> term leaves at least one empty slot even if every row is unique. Distinct-key count is not needed before construction: budgeting from all six rows is conservative. Our three distinct keys ultimately occupy only <code>3 / 12 = 25%</code> of the directory.</p>
+    <p>Capacity determines the hash modulus and slot allocation, <strong>not the row-bit width</strong>. The packed slot still needs only <code>bit_width(6) = 3</code> row bits, even though there are 12 hash slots. Capacity sizing uses host metadata, not a GPU kernel or a distinct-count pass.</p>
+    <p class="source-note">Source: <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_join.cu#L60-L77" target="_blank" rel="noopener noreferrer"><code>hash_csr_capacity</code> in PR #24231</a>. This is the cuDF variant’s sizing policy, not HashGraph’s load-factor policy. This revision also checks that both the requested size and its power-of-two round-up fit in <code>uint32_t</code>; otherwise it throws.</p>
+  </section>
+  <section class="paper-card" id="paper-adaptation" tabindex="-1" aria-labelledby="paper-adaptation-title">
+    <h4 id="paper-adaptation-title">HashGraph and this HashCSR variant</h4>
+    <p>HashGraph groups inputs by <strong>hash bucket</strong>, including unequal keys that collide. This presentation’s HashCSR variant uses an <strong>open-addressed directory of equal-key groups</strong>. Equality checks separate A and B even when their starting slots collide.</p>
+    <p>The shared principle is count → scan → place into contiguous ranges. The paper’s Algorithm 1 has separate parallel loops for hashing and counting; the fused build kernel shown here, packed 32-bit slots, representative-row offsets, and decrementing fill cursors are implementation details of the cuDF variant, not claims about the paper’s kernel boundaries.</p>
+    <p class="source-note">Compare Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=3" target="_blank" rel="noopener noreferrer">preprint §§3.1–3.2, Algorithm 1, pp. 3–4</a>, with <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_csr_kernels.cuh" target="_blank" rel="noopener noreferrer">the cuDF kernels</a>.</p>
+  </section>
+  <section class="paper-card" id="paper-count" tabindex="-1" aria-labelledby="paper-count-title">
+    <h4 id="paper-count-title">Count before assigning storage</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=4">“the number of instances that each hash value appears in the original input.”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=4" target="_blank" rel="noopener noreferrer">preprint §3.2, step 3, p. 4</a>.</p>
+    <p>HashGraph counts members per hash bucket. Here, atomic counts are indexed by an equal-key group’s representative row. Both counts answer the storage question: how many entries must this segment hold?</p>
+  </section>
+  <section class="paper-card" id="paper-scan" tabindex="-1" aria-labelledby="paper-scan-title">
+    <h4 id="paper-scan-title">Counts become segment boundaries</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=4">“A prefix sum array is computed.”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=4" target="_blank" rel="noopener noreferrer">preprint §3.2, step 4, p. 4; Algorithm 1, p. 3</a>.</p>
+    <p>The prefix sum partitions the contiguous entry array according to the counts. This variant first produces cumulative ends; the fill kernel turns them into exclusive starts by decrementing its cursors.</p>
+  </section>
+  <section class="paper-card" id="paper-scatter" tabindex="-1" aria-labelledby="paper-scatter-title">
+    <h4 id="paper-scatter-title">Contiguous ranges, not pointer chains</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=4">“the entries for a specific hash value are in consecutive memory.”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=4" target="_blank" rel="noopener noreferrer">preprint §3.2, HashGraph Collision Management, p. 4</a>.</p>
+    <p>The paper’s placement step uses offsets and an atomic relative position (§3.2, step 6). Our example applies the locality principle to equal-key groups: all A row IDs occupy one interval, all B row IDs another. The packed directory itself still uses linear probing.</p>
+  </section>
+  <section class="paper-card" id="paper-join" tabindex="-1" aria-labelledby="paper-join-title">
+    <h4 id="paper-join-title">Probe a second input</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=5">“the values from a second input are looked up within the hash table created from the first input.”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=5" target="_blank" rel="noopener noreferrer">preprint §3.4, pp. 5–6</a>.</p>
+    <p>This describes the build/probe relationship in the join scene. The paper also introduces a different two-HashGraph, list-intersection probe (Algorithm 3); that is not the one-index probe/count → scan → retrieve path illustrated here.</p>
+  </section>
+  <section class="paper-card" id="paper-groupby" tabindex="-1" aria-labelledby="paper-groupby-title">
+    <h4 id="paper-groupby-title">A shared structure, multiple consumers</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=1">“group-by and aggregation”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=1" target="_blank" rel="noopener noreferrer">preprint §1, p. 1</a>, among the applications of hash tables, alongside inner join.</p>
+    <p>Groupby reduces the payloads in each CSR segment using an aggregation operator. This example uses SUM. The results and fused load/reduce illustration are this presentation’s worked example, not a quoted groupby kernel from the paper.</p>
+  </section>
+  <section class="paper-card" id="paper-layout" tabindex="-1" aria-labelledby="paper-layout-title">
+    <h4 id="paper-layout-title">Two offsets define a range</h4>
+    <blockquote cite="https://arxiv.org/pdf/1907.02900v1#page=3">“The end of the adjacency array is the offset to the next vertex.”</blockquote>
+    <p class="source-note">— Green, <a href="https://arxiv.org/pdf/1907.02900v1#page=3" target="_blank" rel="noopener noreferrer">preprint §3.1, p. 3; Figure 1, p. 4</a>.</p>
+    <p>For representative row <code>r</code>, this becomes <code>values[offsets[r]:offsets[r+1]]</code>. Join enumerates that interval; groupby reduces its payloads. Equal adjacent offsets describe an empty segment.</p>
+  </section>
+  <h3>Animation steps ≠ kernel launches</h3>
+  <ul>
+    <li><strong>Host setup:</strong> capacity is computed from the row count and requested load factor before the GPU build. The Size slide does not represent a GPU kernel.</li>
+    <li><strong>Build kernel:</strong> hashing, insertion/equality checks, and atomic counting are fused in <code>hash_csr_build_count_kernel</code>. The Hash and Count slides illustrate hashing/insertion and counting within this one kernel, not successive launches.</li>
+    <li><strong>Device scan:</strong> <code>cub::DeviceScan::InclusiveSum</code> runs after build and before fill. A library scan is a separate GPU stage and may launch multiple kernels.</li>
+    <li><strong>Fill kernel:</strong> numeric keys hash/find their representative again, decrement a cursor, and scatter row IDs in <code>hash_csr_build_fill_kernel</code>. The cached variant reads the representative instead. Cursor updates produce the final offsets in the same kernel.</li>
+    <li><strong>Join:</strong> <code>hash_csr_probe_count_kernel</code> fuses probe hashing, lookup, and match counting. A separate device scan computes output offsets; <code>hash_csr_retrieve_kernel</code> then expands ranges into pairs.</li>
+    <li><strong>Groupby:</strong> a reduction kernel indirectly loads payloads through the CSR row IDs and aggregates each segment. The example uses SUM. “Gather” here is an in-kernel load, not a separate gather kernel or temporary value array. It consumes the shared CSR, not the join output.</li>
+  </ul>
+  <p class="source-note">The execution strip shows the main data path. Initialization, allocation, and size-transfer plumbing are omitted. Boundaries are stream-ordered dependencies, not necessarily host synchronizations. Join and groupby are separate consumers of the CSR, not consecutive GPU stages.</p>
+  <h3>Example &amp; conventions</h3>
+  <p>Build rows <code>r0…r5</code>: <code>(A,12), (B,7), (A,8), (C,5), (B,3), (A,10)</code>. Probe rows <code>p0…p2</code>: <code>B, A, D</code>. All keys and values are non-null.</p>
+  <ul>
+    <li>Fixed illustrative 32-bit hashes <code>A→0xECC1EF1D, B→0x62F50105, C→0x0BEF92C6</code> show mixed bits across the whole word. They are chosen so that modulo 12 gives <code>1, 1, 6</code>, preserving the A/B probe collision. These are not cuDF’s real hash outputs. Each displayed fingerprint shows its first and last three bits; the ellipsis hides the 23 middle bits, which may contain both zeros and ones.</li>
+    <li>One possible execution chooses representatives <code>r0, r1, r3</code>. Threads race using a device-scoped <strong>atomic compare-and-swap (CAS)</strong> on 32-bit slots in global memory. The first row to claim an empty slot becomes that key’s representative; equal rows reuse its stored row index. A collision with a different key continues probing. The winner is scheduling-dependent, <strong>not necessarily the lowest row index</strong>. This is distinct from the warp-aggregated atomic add that counts group members. See <a href="https://github.com/NVIDIA/cudf/blob/c118ec760e6d281d30342aea09e03b043154f817/cpp/src/join/hash_join/hash_csr.cuh#L43-L63" target="_blank" rel="noopener noreferrer"><code>hash_table_ref::insert</code></a>.</li>
+    <li>The packed slot combines <strong>two independently sourced fields</strong>. Its 29 high bits retain part of the original hash as a <strong>fingerprint</strong>: a quick mismatch filter that avoids loading and comparing unrelated keys. Its three low bits identify the <strong>representative build row</strong>, which locates both the original key and the group’s CSR segment. A fingerprint match still requires a full key comparison; it is not proof of equality. The row bits are neither hash bits nor a hash-table slot number.</li>
+    <li>For C, <code>hash = 0x0BEF92C6</code> and the representative is <code>r3</code>. Retain the 29-bit fingerprint <code>00001011111011111001001011000</code>, discard the hash’s low bits <code>110</code>, and replace them with row index <code>011</code>. Thus <code>(0x0BEF92C6 &amp; ~7) | 3 = 0x0BEF92C3</code>. The full hash still determines the starting slot; only its stored representation is packed.</li>
+    <li>Any similar-looking patterns in the fingerprint and row bits are <strong>coincidental, not duplicated information</strong>. The low field comes from the representative row index, never from copying fingerprint bits. For example, B’s original low hash bits <code>101</code> are replaced by row index <code>001</code>.</li>
+    <li>The six-row diagram shows the <strong>resolved stored word</strong> for each input, not six separately stored entries. Duplicates reuse the winning representative: <code>r2</code> and <code>r5</code> use <code>r0</code>’s bits <code>000</code>; <code>r4</code> uses <code>r1</code>’s bits <code>001</code>. A resolves to <code>0xECC1EF18</code>, B to <code>0x62F50101</code>, and C to <code>0x0BEF92C3</code>: only three directory entries.</li>
+    <li>Six build rows (indices 0–5) need three row bits. In general, <code>bit_width(N)</code> row bits leave <code>32 − bit_width(N)</code> fingerprint bits. This keeps the all-ones row index outside <code>[0, N)</code>, so the all-ones 32-bit slot can represent empty. The key itself stays in the original row, not in the packed slot.</li>
+    <li>Counts include a trailing zero. An inclusive scan creates cumulative ends; atomic decrement-and-scatter transforms these into exclusive starts. Nonrepresentative rows retain zero-length segments.</li>
+    <li>Numeric keys find their representative again during fill. Keys containing strings or lists cache the representative to avoid repeating costly hashing and comparisons.</li>
+    <li>In groupby, segment lengths give COUNT; reducing each segment’s payloads can compute SUM, MIN, or MAX. This example uses SUM and shows only occupied groups.</li>
+  </ul>
+  <h3>Controls</h3>
+  <p>Use the Back / Next buttons, the arrow keys, or select a timeline step. Clicking the slide itself does not navigate. Home / End display the first / last slide. Escape closes these notes. No autoplay; reduced-motion preferences are respected.</p>
+  <p class="source-note">Implementation sources (distinct from the HashGraph reference above): <code>hash_csr.cuh</code>, <code>hash_csr_kernels.cuh</code>, <code>hash_join.cu</code>, and <code>retrieve_impl.cuh</code> in PR #24231. All artwork, styles, and scripts are embedded. No network access is needed.</p>
+</dialog>
+<script>
+'use strict';
+const C={ink:'#252d2b',muted:'#64706b',line:'#d9e0da',green:'#007c46',blue:'#155bce',orange:'#bc480c',A:'#007c46',B:'#155bce',C:'#bc480c',D:'#bc480c'};
+const P={A:'#e8f3ec',B:'#eaf0fd',C:'#fff0e5',D:'#fff0e5'};
+const rows=[{key:'A',value:12},{key:'B',value:7},{key:'A',value:8},{key:'C',value:5},{key:'B',value:3},{key:'A',value:10}];
+const loadFactor=0.5;
+const requestedCapacity=Math.max(rows.length+1,Math.ceil(rows.length/loadFactor));
+const capacity=loadFactor<=0.5?requestedCapacity:2**Math.ceil(Math.log2(requestedCapacity));
+const representatives=[0,1,0,3,1,0];
+const counts=Array(rows.length+1).fill(0);
+representatives.forEach(rep=>counts[rep]++);
+const ends=counts.map((_,i)=>counts.slice(0,i+1).reduce((a,b)=>a+b,0));
+const offsets=ends.map((end,i)=>end-counts[i]);
+const values=[5,2,0,4,1,3];
+const probes=['B','A','D'];
+const groups=[...new Set(representatives)].map(rep=>({key:rows[rep].key,rep,ids:values.slice(offsets[rep],offsets[rep+1])}));
+const joinPairs=probes.flatMap((key,p)=>{const group=groups.find(g=>g.key===key);return group?group.ids.map(r=>[p,r]):[]});
+const sums=Object.fromEntries(groups.map(g=>[g.key,g.ids.reduce((sum,r)=>sum+rows[r].value,0)]));
+const $=id=>document.getElementById(id);
+const text=(x,y,value,cls='body',color='',anchor='start')=>`<text x="${x}" y="${y}" class="${cls}"${color?` style="fill:${color}"`:''} text-anchor="${anchor}">${value}</text>`;
+const rect=(x,y,w,h,fill='#fff',stroke=C.line,rx=0)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}"/>`;
+const arrow=(d,color=C.ink,dashed=false)=>`<path class="route" d="${d}" fill="none" stroke="${color}" stroke-width="2" ${dashed?'stroke-dasharray="5 6"':''} marker-end="url(#arrow-${Object.keys(C).find(k=>C[k]===color)||'ink'})"/>`;
+const node=(id,x,y,content,from='')=>`<g transform="translate(${x} ${y})"><g class="moving" data-id="${id}" data-x="${x}" data-y="${y}"${from?` data-from="${from}"`:''}>${content}</g></g>`;
+const icon=(name,x,y,size=28,color=C.ink)=>{
+ const paths={rows:'M4 5h16v4H4zM4 15h16v4H4z',hash:'M9 3 7 21M17 3l-2 18M3 9h18M2 15h18',join:'M3 5h7v7h11M3 19h7v-7m6-5 5 5-5 5',reduce:'M3 4h5l5 8h8M3 20h5l5-8m3-5 5 5-5 5',count:'M5 4v16M11 4v16M17 4v16M2 16l20-8',scan:'M3 18h5v-5h5V8h5V3m-1 0h5v5',scatter:'M3 12h7m0 0V4h11m-11 8h11m-11 0v8h11',route:'M4 20V5h15m-5-5 5 5-5 5'};
+ return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="${paths[name]||paths.rows}"/></svg>`;
+};
+function chip(r,x,y,w=100){const row=rows[r];return node(`r${r}`,x,y,rect(0,0,w,42,P[row.key],'none')+rect(0,0,3,42,C[row.key],'none')+text(13,25,`r${r}`,'secondary')+text(44,27,row.key,'key',C[row.key])+text(w-11,26,row.value,'body',C.ink,'end'));}
+function groupTag(key,x,y){return rect(x,y,28,28,C[key],'none')+text(x+14,y+20,key,'body','#fff','middle');}
+function vector(data,x,y,step=104,type='count',highlight=false){return data.map((v,i)=>{
+ const active=[0,1,3].includes(i),key=i===0?'A':i===1?'B':'C',color=highlight?C.orange:active?C[key]:C.muted;
+ return node(`${type}${i}`,x+i*step,y,text((step-10)/2,-13,i===6?'END':`r${i}`,'secondary','','middle')+rect(0,0,step-10,52,highlight?'#fff0e5':active?P[key]:'#eff2ee','none')+text((step-10)/2,34,v,'number',color,'middle'));
+ }).join('');}
+function bracket(x,y,w,label,color){return `<path d="M${x} ${y+8}V${y}H${x+w}V${y+8}" fill="none" stroke="${color}" stroke-width="2"/>`+text(x+w/2,y-12,label,'label',color,'middle');}
+function diagram(content,title,description){return `<svg viewBox="0 0 1120 376" role="img" aria-labelledby="diagram-title diagram-description"><title id="diagram-title">${title}</title><desc id="diagram-description">${description}</desc><defs>${Object.entries(C).map(([key,color])=>`<marker id="arrow-${key}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="m2 1 5 4-5 4" fill="none" stroke="${color}" stroke-width="1.5"/></marker>`).join('')}</defs><g class="scene-static">${content}</g><g class="scene-moving"></g></svg>`;}
+function overview(){
+ let s=text(25,37,'01 / INPUT','label')+text(432,37,'02 / SHARED INDEX','label')+text(825,37,'03 / OPERATIONS','label');
+ s+=arrow('M278 180H399',C.ink)+arrow('M645 180H727V105H793',C.blue)+arrow('M727 180V280H793',C.green);
+ [0,1,2,3,4,5].forEach((r,i)=>{s+=chip(r,25+(i%2)*116,78+Math.floor(i/2)*69,100)});
+ s+=node('hub',414,101,icon('hash',20,27,40)+text(80,58,'HashCSR','display')+text(22,111,'KEY → RANGE OF ROW IDS','secondary'));
+ s+=node('join-sign',817,72,icon('join',0,0,34,C.blue)+text(51,23,'JOIN','label',C.blue)+text(0,74,'Emit row pairs.','number'));
+ s+=node('reduce-sign',817,246,icon('reduce',0,0,34,C.green)+text(51,23,'GROUPBY','label',C.green)+text(0,74,'Aggregate values.','number'));
+ s+=text(25,339,'6 ROWS · 3 DISTINCT KEYS','secondary')+text(436,339,'CSR = COMPRESSED SPARSE ROW','secondary');
+ return s;
+}
+function sizing(){
+ let s=text(35,35,'BUILD ROWS / N','label')+text(405,35,'TARGET LOAD / α','label')+text(830,35,'HASH SLOTS / CAPACITY','label');
+ s+=node('size-input',35,65,text(0,53,rows.length,'big-number')+text(0,88,'INCLUDES DUPLICATES','secondary'));
+ s+=arrow('M263 101H357')+arrow('M677 101H784');
+ s+=node('size-load',405,65,text(0,53,loadFactor,'big-number')+text(0,88,'BUDGET FOR 50% LOAD IF ALL KEYS ARE UNIQUE','secondary'));
+ s+=node('size-result',830,65,text(0,53,capacity,'big-number',C.blue)+text(0,88,'NO POWER-OF-TWO ROUNDING HERE','secondary'));
+ s+=text(35,201,'R = max(N + 1, ceil(N / α))','number')+text(580,201,`max(7, ceil(6 / 0.5)) = ${requestedCapacity}`,'number',C.blue);
+ s+=text(35,229,'N + 1 guarantees room for an empty slot.','fine')+text(580,229,'At α ≤ 0.5, keep R. For α > 0.5, round R up to a power of two.','fine');
+ for(let i=0;i<capacity;i++){
+  const x=35+i*88;
+  s+=text(x+39,266,i,'secondary','','middle')+node(`bucket${i}`,x,281,rect(0,0,78,42,'#eff2ee','none')+text(39,27,'—','body',C.muted,'middle'));
+ }
+ s+=text(35,357,'EMPTY DIRECTORY / BEFORE THE BUILD KERNEL','secondary')+text(830,357,`NEXT: hash % ${capacity}`,'secondary',C.blue);
+ return s;
+}
+function hashing(){
+ const hashes={A:0xECC1EF1D,B:0x62F50105,C:0x0BEF92C6};
+ const slots={A:1,B:2,C:6};
+ const word=(kind,x,hash,low,color,pale)=>{
+  const bits=(hash>>>3).toString(2).padStart(29,'0');
+  return `<g data-word="${kind}" transform="translate(${x} 0)">`+
+   rect(0,0,290,42,P.B,'none')+rect(290,0,30,42,pale,'none')+
+   text(278,27,`${bits.slice(0,3)}…${bits.slice(-3)}`,'bits',C.blue,'end')+
+   text(305,27,low.toString(2).padStart(3,'0'),'bits',color,'middle')+'</g>';
+ };
+ let s=text(33,23,'ROW','table-header')+text(64,23,'KEY','table-header')+text(154,23,'VALUE','table-header','','end')+
+  text(245,23,'ORIGINAL 32-BIT HASH','label')+text(606,23,'REP.','label','','middle')+
+  text(660,23,'RESOLVED 32-BIT SLOT','label')+text(1056,23,'SLOT','label','','middle');
+ s+='<path d="M20 38H165" stroke="'+C.line+'"/>';
+ s+=text(245,40,'29 HIGH BITS / ABBREVIATED','secondary',C.blue)+text(565,40,'DROP 3','secondary',C.orange,'end')+
+  text(606,40,'ROW','secondary',C.green,'middle')+text(660,40,'KEEP 29','secondary',C.blue)+
+  text(980,40,'ROW 3','secondary',C.green,'end')+text(1056,40,`OF ${capacity}`,'secondary','','middle');
+ rows.forEach((row,i)=>{
+  const y=47+i*47,hash=hashes[row.key],rep=representatives[i];
+  s+=chip(i,20,y,145);
+  s+=node(`bit-row${i}`,245,y,
+   word('original',0,hash,hash&7,C.orange,P.C)+text(361,27,`r${rep}`,'body',C.green,'middle')+
+   arrow('M387 21H402')+word('resolved',415,hash,rep,C.green,P.A)+
+   text(811,27,slots[row.key],'body','','middle'));
+ });
+ s+=text(20,356,'6 ROWS → 3 DIRECTORY ENTRIES; DUPLICATES REUSE A SLOT','label')+
+  text(660,356,`START = hash % ${capacity} · B PROBES 1 → 2`,'secondary');
+ return s;
+}
+function counting(){
+ let s=text(20,22,'ROWS WITH THE SAME REPRESENTATIVE','label')+text(638,22,'COUNTS / INDEXED BY BUILD ROW','label');
+ groups.forEach((g,k)=>{
+  const y=56+k*101;
+  s+=groupTag(g.key,20,y+7);
+  g.ids.forEach((r,i)=>s+=chip(r,71+i*112,y));
+  s+=text(72,y+66,`REPRESENTATIVE r${g.rep}`,'secondary');
+ });
+ s+=arrow('M422 77H520V117H659',C.A)+arrow('M310 178H547V132H719',C.B)+arrow('M200 279H574V147H839',C.C);
+ s+=vector(counts,638,176,65);
+ s+=icon('count',640,280,28)+text(684,301,'WARP-AGGREGATED ATOMIC ADD','label')+text(638,335,'3 + 2 + 1 = 6 build rows','body');
+ return s;
+}
+function scanning(){
+ let s=text(20,95,'COUNTS','label')+vector(counts,220,61,116);
+ for(let i=0;i<7;i++)s+=arrow(`M${273+i*116} 128V188`,C.line);
+ s+=text(20,227,'CUMULATIVE','label')+text(20,245,'ENDS','label')+vector(ends,220,205,116,'end',true);
+ s+=icon('scan',220,310,28)+text(266,332,'INCLUSIVE PREFIX SUM','label')+text(638,332,'3 → 5 → 5 → 6 → 6 → 6 → 6','body');
+ return s;
+}
+function scattering(){
+ let s=text(20,25,'CSR VALUES','label')+text(20,44,'BUILD ROW IDS','secondary');
+ s+=bracket(220,69,317,'A / 3 ROWS',C.A)+bracket(550,69,207,'B / 2 ROWS',C.B)+bracket(770,69,97,'C / 1 ROW',C.C);
+ values.forEach((r,i)=>{s+=text(270+i*110,101,i,'secondary','','middle')+chip(r,220+i*110,115,100)});
+ s+=text(903,135,'CONTIGUOUS','label')+text(903,155,'BY GROUP','secondary');
+ s+=text(20,260,'CSR OFFSETS','label')+text(20,279,'EXCLUSIVE STARTS','secondary')+vector(offsets,220,236,116,'offset');
+ s+=text(220,333,'A = values[0:3]','body',C.A)+text(511,333,'B = values[3:5]','body',C.B)+text(805,333,'C = values[5:6]','body',C.C);
+ return s;
+}
+function joining(){
+ let s=text(20,22,'PROBE / LEFT','label')+text(367,22,'CSR RANGES / RIGHT','label')+text(867,22,'INNER JOIN / PAIRS','label');
+ probes.forEach((key,p)=>{
+  const y=[56,170,284][p];
+  s+=node(`p${p}`,20,y,rect(0,0,145,47,P[key],'none')+text(16,29,`p${p}`,'secondary')+text(62,31,key,'key',C[key])+text(119,29,p===0?'×2':p===1?'×3':'×0','fine',C[key]));
+ });
+ s+=arrow('M186 80H343',C.B)+arrow('M186 194H343',C.A)+arrow('M186 308H278',C.orange,true);
+ s+=text(295,313,'NO MATCH','label',C.orange);
+ [4,1].forEach((r,i)=>s+=chip(r,367+i*112,58));
+ [5,2,0].forEach((r,i)=>s+=chip(r,367+i*112,174));
+ s+=text(368,126,'values[3:5]','secondary',C.B)+text(368,242,'values[0:3]','secondary',C.A);
+ joinPairs.forEach(([p,r],i)=>{
+  const y=48+i*54,color=C[rows[r].key];
+  s+=node(`pair${p}-${r}`,867,y,rect(0,0,218,43,P[rows[r].key],'none')+text(21,28,`p${p}`,'body')+text(99,27,'→','body',color)+text(157,28,`r${r}`,'body'),`r${r}`);
+ });
+ s+=arrow('M601 80H773V70H842',C.B)+arrow('M773 80V124H842',C.B);
+ s+=arrow('M715 196H799V178H842',C.A)+arrow('M799 196V232H842',C.A)+arrow('M799 232V286H842',C.A);
+ s+=text(20,363,'PROBE COUNTS: [2, 3, 0]','secondary')+text(367,363,'OUTPUT OFFSETS: [0, 2, 5, 5]','secondary')+text(867,363,'5 PAIRS / EXACT ALLOCATION','secondary');
+ return s;
+}
+function reducing(){
+ let s=text(20,22,'OCCUPIED CSR SEGMENTS','label')+text(605,22,'LOAD + REDUCE / SAME KERNEL','label')+text(908,22,'KEY / RESULT','label');
+ groups.forEach((g,k)=>{
+  const y=57+k*100;
+  s+=groupTag(g.key,20,y+7);
+  g.ids.forEach((r,i)=>s+=chip(r,75+i*112,y));
+  s+=arrow(`M${75+g.ids.length*112+4} ${y+21}H573`,C[g.key]);
+  s+=node(`sumexpr${g.key}`,605,y,text(0,28,g.ids.map(r=>rows[r].value).join(' + '),'number',C[g.key]));
+  s+=arrow(`M797 ${y+21}H878`,C[g.key]);
+  s+=node(`result${g.key}`,908,y,rect(0,0,177,51,P[g.key],'none')+text(20,33,g.key,'key',C[g.key])+text(153,36,sums[g.key],'number',C[g.key],'end'));
+ });
+ s+=text(20,363,'ROW IDS GATHER THE ORIGINAL PAYLOADS','secondary')+text(605,363,'EXAMPLE REDUCTION: SUM','secondary',C.green);
+ return s;
+}
+function conclusion(){
+ let s=icon('hash',30,143,45)+text(95,171,'HashCSR','display')+text(30,220,'KEY → CSR ROW-ID RANGE','label')+text(30,249,'Join and groupby consume this index.','body');
+ s+=arrow('M381 181H482V90H570',C.blue)+arrow('M482 181V279H570',C.green);
+ s+=node('join-sign',604,49,icon('join',0,0,34,C.blue)+text(52,24,'JOIN / EXPAND','label',C.blue)+text(0,80,'One pair per match.','display')+text(0,114,'B, A, D → 5 inner-join pairs','body'));
+ s+=node('reduce-sign',604,240,icon('reduce',0,0,34,C.green)+text(52,24,'GROUPBY / REDUCE','label',C.green)+text(0,80,'One result per group.','display')+text(0,114,'A: 30     B: 10     C: 5','body'));
+ return s;
+}
+const passes={
+ setup:['Host setup','Row count + load factor → capacity'],
+ build:['Build kernel','Hash + insert + count'],
+ scan:['Device scan','Counts → ends'],
+ fill:['Fill kernel','Find rep + decrement + scatter'],
+ probe:['Probe kernel','Hash + lookup + count'],
+ outscan:['Device scan','Counts → output offsets'],
+ retrieve:['Retrieve kernel','Expand ranges → pairs'],
+ reduce:['Reduce kernel','Load payloads + reduce']
+};
+const shared=['build','scan','fill'];
+const scenes=[
+ {name:'Overview',zone:'Shared construction',title:'HashCSR for joins<span class="line">and groupby.</span>',label:'Shared index',icon:'route',color:C.ink,passes:shared,caption:'Join and groupby share capacity sizing, hash-table construction, and CSR construction. Join emits matching row pairs; groupby computes one aggregate per group.',context:'6 build rows<br>3 distinct keys',draw:overview,description:'Six build rows form a HashCSR index shared by join and groupby. Build fuses hashing, insertion, and counting. A separate scan precedes fill. Join enumerates matching row pairs; groupby reduces values within each group.'},
+ {name:'Size',zone:'Shared host setup / before the first kernel',title:'Compute hash-table capacity.',label:'Host / no kernel',icon:'hash',color:C.ink,passes:['setup'],caption:'Use all six build rows, not the three distinct keys: uniqueness is not known yet. At the default load factor α = 0.5, reserve 12 slots. The +1 safeguard prevents a full directory at α = 1.',context:'6 build rows<br>12 hash slots<br>Still 3 row bits',draw:sizing,description:'Capacity is computed on the host before the GPU build. N is the build-row count, including duplicates; α is a requested load factor in (0,1], default 0.5. Set R = max(N+1, ceil(N/α)). Use R if α ≤ 0.5; otherwise round R up to a power of two. For N=6 and α=0.5, capacity is max(7,12)=12. This budgets for all keys being unique; three groups will actually occupy 25% of the slots. Row-bit width depends on N, not capacity.'},
+ {name:'Hash',zone:'Shared build kernel / hash + insert',title:'Select representative rows.',label:'One fused kernel',icon:'hash',color:C.ink,passes:['build'],caption:'A global atomic CAS chooses each group’s representative. Equal keys reuse that row index; the winner is scheduling-dependent. Fingerprints reject mismatches; a match still needs a full key comparison.',context:'6 input rows<br>3 stored slots',draw:hashing,description:'All six build rows are shown in input order: r0 A12, r1 B7, r2 A8, r3 C5, r4 B3, r5 A10. Row, Key, and Value headers align with their respective input columns. The hexadecimal hash column is omitted. Fingerprints show their first and last three bits: A is 111…011, B is 011…000, and C is 000…000; the 23 hidden middle bits are not necessarily zeros. Original low hash bits 101,101,101,110,101,101 are discarded and replaced by representative indices 000,001,000,011,001,000. The representatives are r0,r1,r0,r3,r1,r0, not the incoming row indices. For each key, the first successful device-scoped atomic CAS on a slot in global memory selects the representative; it need not be the lowest row index. A resolves to directory slot 1, B to slot 2, and C to slot 6: six inputs reuse three stored entries. A and B start at slot 1, but B probes to slot 2. The fingerprint is a quick mismatch filter; the row index finds the original key and the group’s CSR segment. A matching fingerprint still needs a full key comparison. Hashing, insertion, and counting remain one fused kernel.'},
+ {name:'Count',zone:'Shared build kernel / count',title:'Count rows per group.',label:'No new launch',icon:'count',color:C.ink,passes:['build'],caption:'Green counts “the number of instances that each hash value appears in the original input.” Here, the fused build kernel instead counts equal-key groups by representative. Nonrepresentatives stay at zero.',context:'Fused with<br>hash + insert',draw:counting,description:'Counting is fused with hashing and insertion in one build kernel, not a separate launch. Representatives r0, r1, r3 have counts 3, 2, 1. The counts array with a terminal zero is [3, 2, 0, 1, 0, 0, 0]. Warp peers may combine their atomic increments.'},
+ {name:'Scan',zone:'Shared construction / separate device scan',title:'Scan counts into segment ends.',label:'Kernel boundary',icon:'scan',color:C.ink,passes:['scan'],caption:'“A prefix sum array is computed.” A separate device scan converts group counts to cumulative ends. It runs after build and before fill and may launch several kernels.',context:'Build → scan → fill<br>Not fused',draw:scanning,description:'A separate device scan runs between the build and fill kernels; a scan may launch multiple kernels. Inclusive scan of [3, 2, 0, 1, 0, 0, 0] gives cumulative ends [3, 5, 5, 6, 6, 6, 6].'},
+ {name:'Scatter',zone:'Shared fill kernel',title:'Scatter row IDs by group.',label:'One fill kernel',icon:'scatter',color:C.ink,passes:['fill'],caption:'Green describes entries “in consecutive memory.” Fill combines representative lookup, cursor decrement, and row-ID scatter, producing the final offsets and grouped row IDs used by join and groupby.',context:'Cached keys read<br>the representative<br>instead of finding it',draw:scattering,description:'The fill kernel fuses representative lookup, cursor decrement, and scatter. The cached variant reads representatives instead. One possible values order is [5, 2, 0, 4, 1, 3], with offsets [0, 3, 5, 5, 6, 6, 6]. Join and groupby consume this same CSR.'},
+ {name:'Join',zone:'Join / from the shared CSR',title:'Emit matching row pairs.',label:'Two kernels + scan',icon:'join',color:C.blue,passes:['probe','outscan','retrieve'],caption:'The probe kernel fuses hashing, lookup, and match counting. A separate scan sizes the output; the retrieve kernel emits five pairs. D has no inner match; a left join adds (p2, ∅).',context:'Probe → scan<br>→ retrieve',draw:joining,description:'Join consumes the shared CSR. Probe hashing, lookup, and counting share a kernel; a separate scan computes offsets, then the retrieve kernel emits pairs. Counts [2,3,0] give offsets [0,2,5,5] and pairs (p0,r4), (p0,r1), (p1,r5), (p1,r2), (p1,r0).'},
+ {name:'Groupby',zone:'Groupby / from the shared CSR',title:'Reduce values per group.',label:'One reduce kernel',icon:'reduce',color:C.green,passes:['reduce'],caption:'Groupby consumes the shared CSR, not the join output. A reduction kernel loads payloads by row ID and aggregates each segment. This example uses addition.',context:'Load + reduce<br>in one kernel',draw:reducing,description:'Groupby directly consumes the same CSR used by join. One reduction kernel loads payloads and applies the chosen aggregation within each segment, without a separate gather. Here the operator is addition: A reduces 10,8,12 to 30; B reduces 3,7 to 10; C reduces 5 to 5.'},
+ {name:'Summary',zone:'Shared construction, separate consumers',title:'Join emits pairs; groupby aggregates.',label:'Summary',icon:'route',color:C.ink,passes:shared,caption:'Join and groupby share the build, scan, and fill stages. Join probes and emits matching row pairs. Groupby reduces values within each group. Neither operation consumes the other’s output.',context:'Shared CSR<br>Separate operations',draw:conclusion,description:'The same build kernel, device scan, and fill kernel prepare HashCSR for both operations. Join probes, scans match counts, and emits row pairs. Groupby reduces values within each group. Neither operation consumes the other’s output.'}
+];
+const references=[
+ ['paper-overview','Green 2021 · abstract'],
+ ['capacity-source','cuDF · capacity sizing'],
+ ['paper-adaptation','HashGraph / this variant'],
+ ['paper-count','HashGraph · §3.2 [v1]'],
+ ['paper-scan','HashGraph · §3.2 [v1]'],
+ ['paper-scatter','HashGraph · §3.2 [v1]'],
+ ['paper-join','HashGraph · §3.4 [v1]'],
+ ['paper-groupby','HashGraph · §1 [v1]'],
+ ['paper-layout','HashGraph · §3.1 [v1]']
+];
+const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+const executionMarkup=scene=>scene.passes.map(id=>`<span class="pass" data-pass="${id}"><b>${passes[id][0]}</b><span>${passes[id][1]}</span></span>`).join('<span class="boundary" aria-hidden="true">→</span>');
+let current=0;
+function measureLayout(){
+ const screen=$('screen'),probe=screen.cloneNode(true);
+ probe.querySelector('#stage').remove();
+ probe.removeAttribute('id');
+ probe.querySelectorAll('[id]').forEach(element=>element.removeAttribute('id'));
+ Object.assign(probe.style,{position:'fixed',top:'0',left:'0',width:`${screen.clientWidth}px`,visibility:'hidden',pointerEvents:'none'});
+ probe.setAttribute('aria-hidden','true');
+ probe.setAttribute('inert','');
+ const parts={eyebrow:probe.querySelector('.eyebrow'),headline:probe.querySelector('h1'),execution:probe.querySelector('.execution'),caption:probe.querySelector('.caption')};
+ const heights={eyebrow:0,headline:0,execution:0,caption:0};
+ Object.values(parts).forEach(element=>element.style.minHeight='0');
+ document.body.append(probe);
+ scenes.forEach((scene,i)=>{
+  parts.eyebrow.lastElementChild.textContent=scene.zone;
+  parts.headline.innerHTML=scene.title;
+  parts.execution.innerHTML=executionMarkup(scene);
+  parts.caption.querySelector('.caption-label').innerHTML=icon(scene.icon,0,0,18,scene.color)+scene.label;
+  parts.caption.querySelector('p').textContent=scene.caption;
+  parts.caption.querySelector('.source-button').textContent=references[i][1];
+  parts.caption.querySelector('.context').innerHTML=scene.context;
+  Object.entries(parts).forEach(([name,element])=>heights[name]=Math.max(heights[name],element.getBoundingClientRect().height));
+ });
+ probe.remove();
+ Object.entries(heights).forEach(([name,height])=>screen.style.setProperty(`--${name}-height`,`${Math.ceil(height)}px`));
+}
+const stops=[[3,40],[14,40],[29,40],[39,40],[54,40],[67,40],[84,15],[84,67],[98,40]];
+$('stations').innerHTML=scenes.map((scene,i)=>`<li class="station ${i===1?'setup':i===6?'join':i===7?'groupby':''}" style="left:${stops[i][0]}%;top:${stops[i][1]}px"><button type="button" data-step="${i}" aria-label="Go to slide ${i+1}: ${scene.name}. ${scene.zone}"><span class="point"></span><span class="name">${scene.name}</span></button></li>`).join('');
+function render(index,animate=true){
+ if(index<0||index>=scenes.length)return;
+ const direction=index>=current?1:-1;
+ const play=animate&&!reducedMotion.matches&&index!==current;
+ const stage=$('stage'),positions=new Map();
+ stage.querySelectorAll('.outgoing').forEach(element=>{
+  element.getAnimations({subtree:true}).forEach(animation=>animation.cancel());
+  element.remove();
+ });
+ const previous=stage.querySelector('svg');
+ if(play&&previous){
+  const inverse=previous.getScreenCTM().inverse();
+  previous.querySelectorAll('.moving').forEach(element=>{
+   const matrix=inverse.multiply(element.getScreenCTM());
+   positions.set(element.dataset.id,{x:matrix.e,y:matrix.f,opacity:Number(getComputedStyle(element).opacity)});
+  });
+  previous.getAnimations({subtree:true}).forEach(animation=>{animation.commitStyles();animation.cancel();});
+ }
+ ['.heading','.execution','.caption'].forEach(selector=>document.querySelector(selector).getAnimations().forEach(animation=>animation.cancel()));
+ current=index;
+ const scene=scenes[index];
+ $('headline').innerHTML=scene.title;
+ $('eyebrow').textContent=scene.zone;
+ $('zone').style.background=scene.color;
+ $('number').textContent=String(index+1).padStart(2,'0');
+ $('stop-label').textContent=scene.name;
+ $('caption-label').innerHTML=icon(scene.icon,0,0,18,scene.color)+scene.label;
+ $('caption').textContent=scene.caption;
+ $('source').textContent=references[index][1];
+ $('source').dataset.target=references[index][0];
+ $('source').setAttribute('aria-label',`Read explanation and source: ${references[index][1]}`);
+ $('context').innerHTML=scene.context;
+ $('execution').innerHTML=executionMarkup(scene);
+ $('route-map').dataset.branch=index===6?'join':index===7?'groupby':'';
+ $('route-map').dataset.build=String(index===2||index===3);
+ $('stage').innerHTML=diagram(scene.draw(),scene.title.replace(/<[^>]*>/g,' '),scene.description);
+ $('page').textContent=`${String(index+1).padStart(2,'0')} / ${String(scenes.length).padStart(2,'0')}`;
+ $('back').disabled=index===0;
+ $('next').disabled=index===scenes.length-1;
+ document.querySelectorAll('[data-step]').forEach(button=>{
+  const step=Number(button.dataset.step);
+  if(step===index)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');
+  button.parentElement.classList.toggle('visited',step<=5&&step<index);
+ });
+ const svg=stage.querySelector('svg');
+ const moving=[...svg.querySelectorAll('.moving')];
+ const movingLayer=svg.querySelector('.scene-moving');
+ moving.forEach(element=>movingLayer.append(element.parentElement));
+ if(play){
+  if(previous){
+   const reused=new Set(moving.flatMap(element=>[element.dataset.id,element.dataset.from]));
+   previous.querySelectorAll('.moving').forEach(element=>{if(reused.has(element.dataset.id))element.style.visibility='hidden';});
+   previous.querySelectorAll('[id]').forEach(element=>element.removeAttribute('id'));
+   previous.removeAttribute('aria-labelledby');
+   previous.setAttribute('aria-hidden','true');
+   previous.classList.add('outgoing');
+   stage.append(previous);
+   previous.animate([{opacity:1},{opacity:0}],{duration:220,easing:'ease-out',fill:'forwards'}).onfinish=()=>previous.remove();
+  }
+  ['.heading','.execution','.caption'].forEach(selector=>document.querySelector(selector).animate([{opacity:.65},{opacity:1}],{duration:300,easing:'ease-out'}));
+  svg.querySelector('.scene-static').animate([{opacity:0},{opacity:1}],{duration:300,easing:'ease-out'});
+  moving.forEach((element,i)=>{
+   const old=positions.get(element.dataset.id)||positions.get(element.dataset.from);
+   const x=Number(element.dataset.x),y=Number(element.dataset.y);
+   const dx=old?old.x-x:direction*12,dy=old?old.y-y:0;
+   element.animate([{transform:`translate(${dx}px,${dy}px)`,opacity:old?old.opacity:0},{transform:'translate(0px,0px)',opacity:1}],{duration:600,delay:old?0:Math.min(i*20,120),easing:'cubic-bezier(.4,0,.2,1)',fill:'backwards'});
+  });
+ }
+
+ $('status').textContent=`Slide ${index+1} of ${scenes.length}. ${scene.title.replace(/<[^>]*>/g,' ')} ${scene.caption} Execution stages: ${scene.passes.map(id=>passes[id].join(': ')).join('; ')}.`;
+}
+function navigate(delta){render(current+delta);}
+$('back').addEventListener('click',()=>navigate(-1));
+$('next').addEventListener('click',()=>navigate(1));
+$('stations').addEventListener('click',event=>{const button=event.target.closest('[data-step]');if(button)render(Number(button.dataset.step));});
+window.addEventListener('keydown',event=>{
+ if($('notes').open||event.altKey||event.ctrlKey||event.metaKey)return;
+ if(event.key==='ArrowLeft'){event.preventDefault();navigate(-1);}
+ if(event.key==='ArrowRight'){event.preventDefault();navigate(1);}
+ if(event.key==='Home'){event.preventDefault();render(0);}
+ if(event.key==='End'){event.preventDefault();render(scenes.length-1);}
+});
+$('about').addEventListener('click',()=>{$('notes').showModal();$('notes').scrollTop=0;});
+$('source').addEventListener('click',()=>{
+ const notes=$('notes'),target=$($('source').dataset.target);
+ notes.showModal();
+ target.focus({preventScroll:true});
+ notes.scrollTop+=target.getBoundingClientRect().top-notes.getBoundingClientRect().top-24;
+});
+$('close-notes').addEventListener('click',()=>$('notes').close());
+$('notes').addEventListener('click',event=>{if(event.target===$('notes')){const box=$('notes').getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)$('notes').close();}});
+render(0,false);
+measureLayout();
+document.fonts.ready.then(measureLayout);
+let layoutFrame;
+window.addEventListener('resize',()=>{
+ cancelAnimationFrame(layoutFrame);
+ layoutFrame=requestAnimationFrame(measureLayout);
+});
+reducedMotion.addEventListener('change',()=>render(current,false));
+</script>
+</body>
+</html>
